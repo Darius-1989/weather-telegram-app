@@ -1,0 +1,15 @@
+{
+    "name": "Погода по GPS",
+    "short_name": "Погода",
+    "description": "Узнайте погоду в вашем местоположении",
+    "version": "1.0.0",
+    "icons": [{
+        "src": "https://cdn-icons-png.flaticon.com/512/1163/1163657.png",
+        "sizes": "192x192",
+        "type": "image/png"
+    }],
+    "start_url": "index.html",
+    "display": "standalone",
+    "theme_color": "#2575fc",
+    "background_color": "#ffffff"
+}

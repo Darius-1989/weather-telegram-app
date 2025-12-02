@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Погода по GPS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            padding: 15px;
+            color: #333;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .header h1 {
+            color: #2575fc;
+            font-size: 1.5rem;
+        }
+        .refresh-btn {
+            background: #2575fc;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px 0;
+            display: none;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2575fc;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .weather-card { display: none; }
+        .location {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .current-weather {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+        }
+        .temperature {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #2575fc;
+        }
+        .weather-icon img {
+            width: 80px;
+            height: 80px;
+        }
+        .description {
+            font-size: 1.1rem;
+            color: #666;
+        }
+        .weather-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .detail-item i { color: #2575fc; font-size: 1.5rem; }
+        .detail-info { display: flex; flex-direction: column; }
+        .detail-label { font-size: 0.8rem; color: #666; }
+        .detail-value { font-size: 1rem; font-weight: bold; }
+        .error {
+            text-align: center;
+            padding: 20px;
+            background: #ffe6e6;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+        .retry-btn {
+            background: #2575fc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .footer {
+            text-align: center;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 0.8rem;
+        }
+        @media (max-width: 480px) {
+            .container { padding: 15px; margin: 10px; }
+            .temperature { font-size: 2.5rem; }
+            .weather-icon img { width: 60px; height: 60px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌤️ Погода</h1>
+            <button id="refresh-btn" class="refresh-btn">↻</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Определяем местоположение...</p>
+        </div>
+        
+        <div class="weather-card" id="weather-card">
+            <div class="location">
+                <h2 id="location-name">Загрузка...</h2>
+            </div>
+            
+            <div class="current-weather">
+                <div class="temperature">
+                    <span id="temperature">--</span>°C
+                </div>
+                <div class="weather-icon" id="weather-icon">
+                    <img src="" alt="">
+                </div>
+                <div class="description" id="description">Загрузка...</div>
+            </div>
+            
+            <div class="weather-details">
+                <div class="detail-item">
+                    <i>💨</i>
+                    <div class="detail-info">
+                        <span class="detail-label">Ветер</span>
+                        <span id="wind-speed" class="detail-value">-- км/ч</span>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <i>💧</i>
+                    <div class="detail-info">
+                        <span class="detail-label">Влажность</span>
+                        <span id="humidity" class="detail-value">--%</span>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <i>📊</i>
+                    <div class="detail-info">
+                        <span class="detail-label">Давление</span>
+                        <span id="pressure" class="detail-value">-- гПа</span>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <i>👁️</i>
+                    <div class="detail-info">
+                        <span class="detail-label">Видимость</span>
+                        <span id="visibility" class="detail-value">-- км</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="error" id="error">
+                <p id="error-message">Ошибка</p>
+                <button id="retry-btn" class="retry-btn">Повторить</button>
+            </div>
+            
+            <div class="footer">
+                <p>Обновлено: <span id="last-updated">--:--</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ВАЖНО: Вставьте сюда ваш API ключ из weatherapi.com
+        const API_KEY = 'afe664b00f334b88bfe80615250212';
+        
+        let telegram = null;
+        if (window.Telegram?.WebApp) {
+            telegram = window.Telegram.WebApp;
+            telegram.expand();
+            telegram.enableClosingConfirmation();
+        }
+        
+        document.addEventListener('DOMContentLoaded', initApp);
+        
+        function initApp() {
+            document.getElementById('refresh-btn').addEventListener('click', getLocation);
+            document.getElementById('retry-btn').addEventListener('click', getLocation);
+            
+            if (telegram) {
+                const mainButton = telegram.MainButton;
+                mainButton.setText("Обновить погоду");
+                mainButton.onClick(getLocation);
+                mainButton.show();
+            }
+            
+            getLocation();
+        }
+        
+        function getLocation() {
+            showLoading(true);
+            hideError();
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    position => getWeather(position.coords),
+                    error => {
+                        showError("Разрешите доступ к геолокации или введите город вручную");
+                        showLoading(false);
+                        // Попробуем получить погоду по IP
+                        getWeatherByIP();
+                    },
+                    { timeout: 10000 }
+                );
+            } else {
+                getWeatherByIP();
+            }
+        }
+        
+        async function getWeather(coords) {
+            try {
+                const { latitude, longitude } = coords;
+                const url = `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${latitude},${longitude}&lang=ru`;
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Ошибка API');
+                
+                const data = await response.json();
+                updateUI(data);
+                showLoading(false);
+                updateLastUpdated();
+                
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showError("Не удалось получить погоду. Проверьте интернет и API ключ.");
+                showLoading(false);
+            }
+        }
+        
+        async function getWeatherByIP() {
+            try {
+                const url = `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=auto:ip&lang=ru`;
+                const response = await fetch(url);
+                
+                if (!response.ok) throw new Error('Ошибка API');
+                
+                const data = await response.json();
+                updateUI(data);
+                showLoading(false);
+                
+            } catch (error) {
+                showError("Не удалось определить местоположение");
+                showLoading(false);
+            }
+        }
+        
+        function updateUI(data) {
+            if (!data || !data.location || !data.current) {
+                showError("Некорректные данные от сервера");
+                return;
+            }
+            
+            const { location, current } = data;
+            
+            // Обновляем данные
+            document.getElementById('location-name').textContent = 
+                `${location.name}, ${location.country}`;
+            document.getElementById('temperature').textContent = 
+                Math.round(current.temp_c);
+            document.getElementById('description').textContent = 
+                current.condition.text;
+            
+            // Иконка погоды
+            const icon = document.querySelector('#weather-icon img');
+            icon.src = current.condition.icon.startsWith('//') 
+                ? `https:${current.condition.icon}` 
+                : current.condition.icon;
+            icon.alt = current.condition.text;
+            
+            // Детали
+            document.getElementById('wind-speed').textContent = 
+                `${current.wind_kph} км/ч`;
+            document.getElementById('humidity').textContent = 
+                `${current.humidity}%`;
+            document.getElementById('pressure').textContent = 
+                `${current.pressure_mb} гПа`;
+            document.getElementById('visibility').textContent = 
+                `${current.vis_km} км`;
+            
+            // Показываем карточку
+            document.getElementById('weather-card').style.display = 'block';
+        }
+        
+        function updateLastUpdated() {
+            const now = new Date();
+            document.getElementById('last-updated').textContent = 
+                now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+        
+        function showError(message) {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error').style.display = 'block';
+        }
+        
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
