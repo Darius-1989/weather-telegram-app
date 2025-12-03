@@ -41,7 +41,8 @@ let indicator = {
     lastSymbol: '',
     lastTimeframe: '',
     sma_high: 0,
-    sma_low: 0
+    sma_low: 0,
+    hasInitialSignal: false
 };
 
 // Top 50 Binance Futures монет
@@ -81,10 +82,6 @@ function initChart() {
     
     const chartContainer = document.getElementById('chart');
     chartContainer.innerHTML = '';
-    
-    // Определяем символ для настройки точности
-    const symbol = document.getElementById('symbol').value;
-    const precision = getPricePrecision(symbol);
     
     chart = LightweightCharts.createChart(chartContainer, {
         width: chartContainer.clientWidth,
@@ -156,8 +153,8 @@ function initChart() {
         lastValueVisible: false,
         priceFormat: {
             type: 'price',
-            precision: precision,
-            minMove: Math.pow(10, -precision)
+            precision: 4,
+            minMove: 0.0001
         }
     });
     
@@ -198,7 +195,7 @@ function initSymbols() {
 }
 
 // ============================================
-// PINE SCRIPT LOGIC (ТОЧНО КАК В ORIGINAL)
+// PINE SCRIPT LOGIC (СТАБИЛЬНАЯ ВЕРСИЯ)
 // ============================================
 
 function calculatePineIndicator() {
@@ -213,11 +210,10 @@ function calculatePineIndicator() {
     
     console.log('Calculating indicator with:', { length, target, atrPeriod });
     
-    // Calculate ATR (ТОЧНО как в Pine Script)
+    // Calculate ATR
     let atrSum = 0;
-    let atrCount = 0;
     
-    for (let i = 1; i < currentData.length && atrCount < atrPeriod; i++) {
+    for (let i = 1; i < Math.min(currentData.length, atrPeriod + 1); i++) {
         const high = currentData[i].high;
         const low = currentData[i].low;
         const prevClose = currentData[i-1].close;
@@ -229,38 +225,38 @@ function calculatePineIndicator() {
         );
         
         atrSum += tr;
-        atrCount++;
     }
     
-    const atr_value = (atrSum / Math.max(1, atrCount)) * 0.3;
+    const atr_value = (atrSum / Math.min(atrPeriod, currentData.length - 1)) * 0.3;
     
-    // Calculate SMA (ТОЧНО как в Pine Script)
+    // Calculate SMA
     let smaHighSum = 0;
     let smaLowSum = 0;
-    let smaCount = 0;
     
     const startIdx = Math.max(0, currentData.length - length);
     for (let i = startIdx; i < currentData.length; i++) {
         smaHighSum += currentData[i].high;
         smaLowSum += currentData[i].low;
-        smaCount++;
     }
     
-    const sma_high = (smaHighSum / Math.max(1, smaCount)) + atr_value;
-    const sma_low = (smaLowSum / Math.max(1, smaCount)) - atr_value;
+    const smaCount = currentData.length - startIdx;
+    const sma_high = (smaHighSum / smaCount) + atr_value;
+    const sma_low = (smaLowSum / smaCount) - atr_value;
     
     const close = currentData[currentData.length - 1].close;
     const prevClose = currentData.length > 1 ? currentData[currentData.length - 2].close : close;
     
-    console.log('SMA values:', { sma_high, sma_low, close, prevClose });
+    console.log('Calculated:', { sma_high, sma_low, close, prevClose, atr_value });
     
-    // Определяем тренд (ТОЧНО как в Pine Script)
-    const symbolChanged = indicator.lastSymbol !== document.getElementById('symbol').value;
-    const timeframeChanged = indicator.lastTimeframe !== document.getElementById('timeframe').value;
+    // Проверяем смену символа или таймфрейма
+    const currentSymbol = document.getElementById('symbol').value;
+    const currentTimeframe = document.getElementById('timeframe').value;
+    const symbolChanged = indicator.lastSymbol !== currentSymbol;
+    const timeframeChanged = indicator.lastTimeframe !== currentTimeframe;
     
-    // При смене символа или таймфрейма сбрасываем все
     if (symbolChanged || timeframeChanged) {
         console.log('Symbol or timeframe changed, resetting indicator');
+        // Полный сброс при смене
         indicator = {
             trend: 'neutral',
             atr: 0,
@@ -275,14 +271,18 @@ function calculatePineIndicator() {
             stopLossHit: false,
             signal_up: false,
             signal_down: false,
-            lastSymbol: document.getElementById('symbol').value,
-            lastTimeframe: document.getElementById('timeframe').value,
+            lastSymbol: currentSymbol,
+            lastTimeframe: currentTimeframe,
             sma_high: 0,
-            sma_low: 0
+            sma_low: 0,
+            hasInitialSignal: false
         };
+        
+        // Сбрасываем линии
+        resetPriceLines();
     }
     
-    // Сохраняем SMA для использования в проверках
+    // Сохраняем текущие SMA
     indicator.sma_high = sma_high;
     indicator.sma_low = sma_low;
     
@@ -291,34 +291,30 @@ function calculatePineIndicator() {
     let signal_down = false;
     let trendChanged = false;
     
-    // Crossover проверка (цена пересекла sma_high сверху) - ТОЧНО как в Pine Script
-    if (close > sma_high && prevClose <= sma_high) {
-        console.log('Crossover detected: close > sma_high');
-        trend = true;
-        signal_up = true;
-        signal_down = false;
-        trendChanged = true;
-        indicator.stopLossHit = false;
+    // ПРОСТАЯ И НАДЕЖНАЯ ЛОГИКА СИГНАЛОВ
+    // Если цена выше SMA HIGH - бычий тренд
+    // Если цена ниже SMA LOW - медвежий тренд
+    
+    if (close > sma_high) {
+        if (!indicator.hasInitialSignal || !trend) {
+            trend = true;
+            signal_up = true;
+            trendChanged = true;
+            console.log('UP trend signal');
+        }
+    } else if (close < sma_low) {
+        if (!indicator.hasInitialSignal || trend) {
+            trend = false;
+            signal_down = true;
+            trendChanged = true;
+            console.log('DOWN trend signal');
+        }
     }
     
-    // Crossunder проверка (цена пересекла sma_low снизу) - ТОЧНО как в Pine Script
-    if (close < sma_low && prevClose >= sma_low) {
-        console.log('Crossunder detected: close < sma_low');
-        trend = false;
-        signal_up = false;
-        signal_down = true;
-        trendChanged = true;
-        indicator.stopLossHit = false;
-    }
-    
-    // Если нет сигнала, сохраняем предыдущий тренд
-    if (!signal_up && !signal_down) {
-        trend = indicator.isBullish;
-    }
-    
-    // Пересчитываем цели ТОЛЬКО при смене тренда (как в Pine Script)
-    if (trendChanged) {
-        console.log('Trend changed, calculating new targets');
+    // Пересчитываем цели при смене тренда или если их еще нет
+    if (trendChanged || indicator.entryPrice === 0) {
+        console.log('Calculating new targets');
+        
         const base = trend ? sma_low : sma_high;
         const atr_multiplier = atr_value * (trend ? 1 : -1);
         
@@ -328,22 +324,18 @@ function calculatePineIndicator() {
         indicator.tp2 = close + atr_multiplier * (10 + target * 2);
         indicator.tp3 = close + atr_multiplier * (15 + target * 4);
         indicator.tp4 = close + atr_multiplier * (20 + target * 6);
+        indicator.hasInitialSignal = true;
         
-        console.log('New targets calculated:', {
+        console.log('Targets:', {
             entry: indicator.entryPrice,
             stop: indicator.stopLoss,
             tp1: indicator.tp1,
-            tp2: indicator.tp2,
-            tp3: indicator.tp3,
-            tp4: indicator.tp4,
-            trend: trend ? 'UP' : 'DOWN'
+            tp2: indicator.tp2
         });
-    } else {
-        console.log('No trend change, keeping existing targets');
     }
     
-    // Проверка стоп лосса (ТОЛЬКО если есть активная позиция)
-    if (!indicator.stopLossHit && indicator.stopLoss !== 0 && indicator.entryPrice !== 0) {
+    // Проверка стоп лосса
+    if (!indicator.stopLossHit && indicator.stopLoss !== 0) {
         if ((trend && close <= indicator.stopLoss) || 
             (!trend && close >= indicator.stopLoss)) {
             indicator.stopLossHit = true;
@@ -351,57 +343,17 @@ function calculatePineIndicator() {
         }
     }
     
-    // Если нет активной позиции (цели не установлены), но цена показывает тренд
-    if (indicator.entryPrice === 0) {
-        // Определяем начальный тренд для первой установки целей
-        if (close > sma_high) {
-            trend = true;
-            signal_up = true;
-            const base = sma_low;
-            const atr_multiplier = atr_value;
-            
-            indicator.entryPrice = close;
-            indicator.stopLoss = base;
-            indicator.tp1 = close + atr_multiplier * (5 + target);
-            indicator.tp2 = close + atr_multiplier * (10 + target * 2);
-            indicator.tp3 = close + atr_multiplier * (15 + target * 4);
-            indicator.tp4 = close + atr_multiplier * (20 + target * 6);
-            
-            console.log('Initial UP trend detected, setting targets');
-        } else if (close < sma_low) {
-            trend = false;
-            signal_down = true;
-            const base = sma_high;
-            const atr_multiplier = -atr_value;
-            
-            indicator.entryPrice = close;
-            indicator.stopLoss = base;
-            indicator.tp1 = close + atr_multiplier * (5 + target);
-            indicator.tp2 = close + atr_multiplier * (10 + target * 2);
-            indicator.tp3 = close + atr_multiplier * (15 + target * 4);
-            indicator.tp4 = close + atr_multiplier * (20 + target * 6);
-            
-            console.log('Initial DOWN trend detected, setting targets');
-        }
-    }
+    // Обновляем индикатор
+    indicator.trend = trend ? 'up' : 'down';
+    indicator.atr = atr_value;
+    indicator.price = close;
+    indicator.isBullish = trend;
+    indicator.signal_up = signal_up;
+    indicator.signal_down = signal_down;
     
-    // Сохраняем текущие настройки
-    indicator.lastSymbol = document.getElementById('symbol').value;
-    indicator.lastTimeframe = document.getElementById('timeframe').value;
-    
-    // Форматируем числа
-    const symbol = document.getElementById('symbol').value;
-    const precision = getPricePrecision(symbol);
-    
-    indicator = {
-        ...indicator,
-        trend: trend ? 'up' : 'down',
-        atr: atr_value,
-        price: close,
-        isBullish: trend,
-        signal_up,
-        signal_down
-    };
+    // Сохраняем последние настройки
+    indicator.lastSymbol = currentSymbol;
+    indicator.lastTimeframe = currentTimeframe;
 }
 
 // ============================================
@@ -426,17 +378,18 @@ function drawIndicatorLines() {
     
     const color = indicator.stopLossHit ? '#ff0000' : null;
     
-    // Создаем новые линии
     try {
+        // STOP LOSS
         priceLines.stopLoss = candleSeries.createPriceLine({
             price: indicator.stopLoss,
             color: color || '#ff0000',
             lineWidth: 2,
             lineStyle: 2,
             axisLabelVisible: true,
-            title: 'STOP'
+            title: 'SL'
         });
         
+        // ENTRY
         priceLines.entry = candleSeries.createPriceLine({
             price: indicator.entryPrice,
             color: color || '#0066cc',
@@ -446,6 +399,7 @@ function drawIndicatorLines() {
             title: 'ENTRY'
         });
         
+        // TAKE PROFITS
         priceLines.tp1 = candleSeries.createPriceLine({
             price: indicator.tp1,
             color: color || '#00ff00',
@@ -490,12 +444,14 @@ function drawIndicatorLines() {
 }
 
 function resetPriceLines() {
+    if (!candleSeries) return;
+    
     Object.values(priceLines).forEach(line => {
         if (line) {
             try {
                 candleSeries.removePriceLine(line);
             } catch (e) {
-                // Игнорируем ошибки удаления
+                console.log('Error removing price line:', e);
             }
         }
     });
@@ -511,11 +467,14 @@ function resetPriceLines() {
 }
 
 // ============================================
-// DATA LOADING
+// DATA LOADING (НАДЕЖНАЯ ВЕРСИЯ)
 // ============================================
 
-async function loadData(resetIndicator = false) {
-    if (isLoading) return;
+async function loadData() {
+    if (isLoading) {
+        console.log('Already loading, skipping');
+        return;
+    }
     
     try {
         isLoading = true;
@@ -526,23 +485,27 @@ async function loadData(resetIndicator = false) {
         
         console.log(`Loading ${symbol} ${timeframe}...`);
         
+        // Загружаем данные
         const data = await getChartData(symbol, timeframe);
         
         if (!data || data.length === 0) {
-            throw new Error('No data received');
+            throw new Error('No data received from API');
         }
         
         currentData = formatData(data);
         
-        // Переинициализируем график если нужно
+        // Проверяем данные
+        if (currentData.length < 30) {
+            throw new Error(`Not enough data: ${currentData.length} bars`);
+        }
+        
+        // Инициализируем график если нужно
         if (!chart) {
             initChart();
         }
         
         // Обновляем данные на графике
-        if (candleSeries) {
-            candleSeries.setData(currentData);
-        }
+        candleSeries.setData(currentData);
         
         // Рассчитываем индикаторы
         calculatePineIndicator();
@@ -553,88 +516,103 @@ async function loadData(resetIndicator = false) {
         // Обновляем UI
         updateUI();
         
-        // Автоматически подгоняем график
+        // Центрируем график
         autoZoomToLatest();
         
-        hideLoading();
+        console.log('Data loaded successfully');
         
     } catch (error) {
         console.error('Error loading data:', error);
+        alert(`Ошибка загрузки: ${error.message}. Используем тестовые данные.`);
         loadTestData();
     } finally {
         isLoading = false;
+        hideLoading();
     }
 }
 
-async function getChartData(symbol, interval, limit = 100) {
+async function getChartData(symbol, interval) {
     try {
-        // Для разных таймфреймов разное количество данных
-        let limitCount = 100;
-        if (interval === '1m' || interval === '5m') {
-            limitCount = 200;
-        } else if (interval === '1h' || interval === '4h') {
-            limitCount = 100;
-        }
+        // Определяем лимит в зависимости от таймфрейма
+        let limit = 100;
+        if (interval === '1m' || interval === '5m') limit = 150;
+        if (interval === '15m' || interval === '30m') limit = 100;
+        if (interval === '1h' || interval === '4h') limit = 100;
         
-        const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limitCount}`;
+        const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+        
+        console.log(`Fetching from: ${url}`);
+        
         const response = await fetch(url);
         
-        if (!response.ok) throw new Error(`API error: ${response.status}`);
-        return await response.json();
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data || data.length === 0) {
+            throw new Error('Empty response from API');
+        }
+        
+        console.log(`Received ${data.length} bars`);
+        return data;
         
     } catch (error) {
-        console.warn('Using test data:', error.message);
+        console.error('API error:', error);
         return null;
     }
 }
 
 function formatData(rawData) {
-    return rawData.map(item => ({
-        time: item[0] / 1000,
-        open: parseFloat(item[1]),
-        high: parseFloat(item[2]),
-        low: parseFloat(item[3]),
-        close: parseFloat(item[4]),
-        volume: parseFloat(item[5])
-    }));
+    return rawData.map(item => {
+        // Проверяем данные
+        const time = item[0] / 1000;
+        const open = parseFloat(item[1]);
+        const high = parseFloat(item[2]);
+        const low = parseFloat(item[3]);
+        const close = parseFloat(item[4]);
+        const volume = parseFloat(item[5]);
+        
+        // Проверяем на корректность
+        if (isNaN(open) || isNaN(high) || isNaN(low) || isNaN(close)) {
+            console.warn('Invalid data point:', item);
+            return null;
+        }
+        
+        return {
+            time,
+            open,
+            high,
+            low,
+            close,
+            volume
+        };
+    }).filter(item => item !== null); // Убираем некорректные данные
 }
 
 function autoZoomToLatest() {
     if (!chart || currentData.length < 10) return;
     
     try {
-        // Показываем последние свечи в зависимости от таймфрейма
-        const timeframe = document.getElementById('timeframe').value;
-        let visibleBars = 50;
-        
-        if (timeframe === '1m') visibleBars = 100;
-        if (timeframe === '5m') visibleBars = 80;
-        if (timeframe === '15m') visibleBars = 60;
-        if (timeframe === '1h') visibleBars = 50;
-        if (timeframe === '4h') visibleBars = 30;
-        
+        const visibleBars = 50;
         const lastBarIndex = currentData.length - 1;
         const firstVisibleIndex = Math.max(0, lastBarIndex - visibleBars);
         
         const firstTime = currentData[firstVisibleIndex].time;
         const lastTime = currentData[lastBarIndex].time;
         
-        // Добавляем отступ
-        const padding = (lastTime - firstTime) * 0.05;
-        
         chart.timeScale().setVisibleRange({
             from: firstTime,
-            to: lastTime + padding
+            to: lastTime
         });
-        
-        // Даем графику время на обновление
-        setTimeout(() => {
-            chart.timeScale().fitContent();
-        }, 100);
         
     } catch (error) {
         console.warn('Auto zoom error:', error);
-        chart.timeScale().fitContent();
+        // Пробуем просто подогнать
+        setTimeout(() => {
+            chart.timeScale().fitContent();
+        }, 100);
     }
 }
 
@@ -643,29 +621,19 @@ function autoZoomToLatest() {
 // ============================================
 
 function updateUI() {
-    // Форматируем цены
+    // Форматируем цены до 4 знаков после запятой
     const formatPrice = (price) => {
-        if (!price || isNaN(price) || price === 0) return '0.0000';
+        if (!price || isNaN(price)) return '0.0000';
         
-        const symbol = document.getElementById('symbol').value;
-        const precision = getPricePrecision(symbol);
-        
-        // Для очень маленьких цен показываем больше знаков
-        if (price < 0.0001) {
-            return price.toFixed(6);
-        } else if (price < 0.01) {
-            return price.toFixed(5);
-        } else if (price < 1) {
-            return price.toFixed(4);
-        } else if (price < 10) {
-            return price.toFixed(3);
-        } else if (price < 100) {
-            return price.toFixed(2);
-        } else if (price < 1000) {
-            return price.toFixed(2);
-        } else {
-            return price.toFixed(2);
-        }
+        // Всегда показываем минимум 2, максимум 4 знака после запятой
+        if (price >= 1000) return price.toFixed(2);
+        if (price >= 100) return price.toFixed(2);
+        if (price >= 10) return price.toFixed(3);
+        if (price >= 1) return price.toFixed(4);
+        if (price >= 0.1) return price.toFixed(5);
+        if (price >= 0.01) return price.toFixed(6);
+        if (price >= 0.001) return price.toFixed(6);
+        return price.toFixed(8);
     };
     
     // Update trend
@@ -697,6 +665,8 @@ function updateUI() {
     ];
     
     targets.forEach(target => {
+        if (!target.value || isNaN(target.value)) return;
+        
         const div = document.createElement('div');
         div.className = `target ${target.type}`;
         
@@ -733,7 +703,7 @@ function updateUI() {
 }
 
 // ============================================
-// TEST DATA (FALLBACK)
+// TEST DATA (НАДЕЖНАЯ ВЕРСИЯ)
 // ============================================
 
 function loadTestData() {
@@ -742,7 +712,19 @@ function loadTestData() {
     const symbol = document.getElementById('symbol').value;
     const timeframe = document.getElementById('timeframe').value;
     
-    // Сбрасываем индикатор при смене символа/таймфрейма
+    // Инициализируем график если нужно
+    if (!chart) {
+        initChart();
+    }
+    
+    // Генерируем тестовые данные
+    const data = generateTestData(symbol, timeframe);
+    currentData = formatData(data);
+    
+    // Устанавливаем данные
+    candleSeries.setData(currentData);
+    
+    // Сбрасываем индикатор
     indicator = {
         trend: 'neutral',
         atr: 0,
@@ -760,22 +742,9 @@ function loadTestData() {
         lastSymbol: symbol,
         lastTimeframe: timeframe,
         sma_high: 0,
-        sma_low: 0
+        sma_low: 0,
+        hasInitialSignal: false
     };
-    
-    // Переинициализируем график если нужно
-    if (!chart) {
-        initChart();
-    }
-    
-    // Генерируем тестовые данные
-    const data = generateTestData(symbol, timeframe);
-    currentData = formatData(data);
-    
-    // Обновляем график
-    if (candleSeries) {
-        candleSeries.setData(currentData);
-    }
     
     // Рассчитываем индикаторы
     calculatePineIndicator();
@@ -786,42 +755,34 @@ function loadTestData() {
     // Обновляем UI
     updateUI();
     
-    // Автоматически подгоняем график
+    // Центрируем график
     autoZoomToLatest();
     
-    hideLoading();
+    console.log('Test data loaded');
 }
 
 function generateTestData(symbol, timeframe) {
     const data = [];
-    const basePrice = getTestPrice(symbol);
+    let basePrice = getTestPrice(symbol);
     let price = basePrice;
     let trend = Math.random() > 0.5;
     
-    // Определяем интервал в миллисекундах
-    let intervalMs = 60000; // 1 minute по умолчанию
-    if (timeframe === '5m') intervalMs = 300000;
-    if (timeframe === '15m') intervalMs = 900000;
-    if (timeframe === '30m') intervalMs = 1800000;
-    if (timeframe === '1h') intervalMs = 3600000;
-    if (timeframe === '4h') intervalMs = 14400000;
+    // Определяем количество баров
+    let bars = 100;
+    if (timeframe === '1m' || timeframe === '5m') bars = 150;
     
-    const barsCount = timeframe === '1m' ? 200 : 100;
-    
-    for (let i = 0; i < barsCount; i++) {
-        const time = Date.now() - (barsCount - 1 - i) * intervalMs;
+    for (let i = 0; i < bars; i++) {
+        const timeOffset = (bars - 1 - i) * getIntervalMs(timeframe);
+        const time = Date.now() - timeOffset;
         
-        const trendStrength = trend ? 0.003 : -0.003;
-        const noise = (Math.random() - 0.5) * 0.01;
+        // Создаем реалистичное движение цены
+        const volatility = basePrice * 0.01; // 1% волатильность
+        const randomMove = (Math.random() - 0.5) * 2 * volatility;
         
         const open = price;
-        const change = trendStrength + noise;
-        const close = open * (1 + change);
-        const high = Math.max(open, close) * (1 + Math.random() * 0.005);
-        const low = Math.min(open, close) * (1 - Math.random() * 0.005);
-        
-        // Периодически меняем тренд для тестовых сигналов
-        if (i % 25 === 0) trend = !trend;
+        const close = open + randomMove;
+        const high = Math.max(open, close) + Math.random() * volatility * 0.5;
+        const low = Math.min(open, close) - Math.random() * volatility * 0.5;
         
         data.push([
             time,
@@ -852,6 +813,18 @@ function getTestPrice(symbol) {
     return prices[symbol] || 100;
 }
 
+function getIntervalMs(timeframe) {
+    const intervals = {
+        '1m': 60000,
+        '5m': 300000,
+        '15m': 900000,
+        '30m': 1800000,
+        '1h': 3600000,
+        '4h': 14400000
+    };
+    return intervals[timeframe] || 60000;
+}
+
 // ============================================
 // UTILITY FUNCTIONS
 // ============================================
@@ -872,16 +845,45 @@ function toggleFullscreen() {
     }
 }
 
-function resetStopLoss() {
-    indicator.stopLossHit = false;
+function resetAll() {
+    console.log('Resetting indicator...');
     
-    // Перерисовываем линии
-    drawIndicatorLines();
+    const symbol = document.getElementById('symbol').value;
+    const timeframe = document.getElementById('timeframe').value;
     
-    // Обновляем UI
-    updateUI();
+    // Полный сброс индикатора
+    indicator = {
+        trend: 'neutral',
+        atr: 0,
+        price: 0,
+        entryPrice: 0,
+        stopLoss: 0,
+        tp1: 0,
+        tp2: 0,
+        tp3: 0,
+        tp4: 0,
+        isBullish: false,
+        stopLossHit: false,
+        signal_up: false,
+        signal_down: false,
+        lastSymbol: symbol,
+        lastTimeframe: timeframe,
+        sma_high: 0,
+        sma_low: 0,
+        hasInitialSignal: false
+    };
     
-    console.log('Stop loss reset');
+    // Сбрасываем линии
+    resetPriceLines();
+    
+    // Пересчитываем с текущими данными
+    if (currentData.length > 0) {
+        calculatePineIndicator();
+        drawIndicatorLines();
+        updateUI();
+    }
+    
+    alert('Индикатор сброшен!');
 }
 
 function shareSignal() {
@@ -911,24 +913,36 @@ Time: ${new Date().toLocaleString()}
 // ============================================
 
 function setupEventListeners() {
-    document.getElementById('updateBtn').addEventListener('click', () => loadData());
+    // Кнопка обновления
+    document.getElementById('updateBtn').addEventListener('click', loadData);
     
-    document.getElementById('symbol').addEventListener('change', () => loadData());
+    // Смена символа
+    document.getElementById('symbol').addEventListener('change', loadData);
     
-    document.getElementById('timeframe').addEventListener('change', () => loadData());
+    // Смена таймфрейма
+    document.getElementById('timeframe').addEventListener('change', loadData);
     
+    // Изменение настроек индикатора
     ['trendLength', 'targetMultiplier', 'atrPeriod'].forEach(id => {
-        document.getElementById(id).addEventListener('change', () => {
+        document.getElementById(id).addEventListener('change', function() {
+            console.log(`Setting changed: ${id} = ${this.value}`);
+            
             if (currentData.length > 20) {
                 calculatePineIndicator();
                 drawIndicatorLines();
                 updateUI();
+                alert(`Настройка "${id}" изменена!`);
             }
         });
     });
     
-    document.getElementById('resetBtn').addEventListener('click', resetStopLoss);
+    // Кнопка сброса
+    document.getElementById('resetBtn').addEventListener('click', resetAll);
+    
+    // Кнопка шаринга
     document.getElementById('shareBtn').addEventListener('click', shareSignal);
+    
+    // Кнопка полноэкранного режима
     document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
 }
 
@@ -939,31 +953,41 @@ function setupEventListeners() {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('App starting...');
     
-    // Инициализируем список монет
-    initSymbols();
-    
-    // Настройка событий
-    setupEventListeners();
-    
-    // Инициализируем график
-    initChart();
-    
-    // Загружаем данные
-    setTimeout(() => loadData(), 100);
-    
-    // Автообновление
-    setInterval(() => {
-        if (!document.hidden && !isLoading) {
+    try {
+        // Инициализируем список монет
+        initSymbols();
+        
+        // Настройка событий
+        setupEventListeners();
+        
+        // Инициализируем график
+        initChart();
+        
+        // Загружаем данные через 500мс
+        setTimeout(() => {
             loadData();
-        }
-    }, 30000);
-    
-    // Обновление при возвращении на вкладку
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) {
-            loadData();
-        }
-    });
-    
-    console.log('App started successfully');
+        }, 500);
+        
+        // Автообновление каждые 30 секунд
+        setInterval(() => {
+            if (!document.hidden && !isLoading) {
+                console.log('Auto-refresh...');
+                loadData();
+            }
+        }, 30000);
+        
+        // Обновление при возвращении на вкладку
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                console.log('Tab became visible, refreshing...');
+                setTimeout(() => loadData(), 1000);
+            }
+        });
+        
+        console.log('App started successfully');
+        
+    } catch (error) {
+        console.error('Fatal error during initialization:', error);
+        alert(`Ошибка инициализации: ${error.message}`);
+    }
 });
