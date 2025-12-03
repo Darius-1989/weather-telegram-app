@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trend_1H Индикатор - Telegram Mini App</title>
+    <title>TREND_1H FUTURES</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.0.1/dist/lightweight-charts.css">
     <style>
         * {
             margin: 0;
@@ -15,194 +14,106 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0f172a;
-            color: #f1f5f9;
-            min-height: 100vh;
-            padding: 10px;
+            background: #000000;
+            color: #ffffff;
+            overflow-x: hidden;
         }
         
         .container {
-            max-width: 100%;
+            padding: 15px;
+            background: #000000;
+            min-height: 100vh;
         }
         
         .header {
             text-align: center;
             padding: 15px;
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-            border-radius: 12px;
             margin-bottom: 15px;
-            border: 1px solid #475569;
+            background: #111111;
+            border-radius: 10px;
+            border: 1px solid #333333;
         }
         
         .header h1 {
             font-size: 18px;
-            color: #22c55e;
+            color: #ffffff;
             margin-bottom: 5px;
         }
         
         .header p {
             font-size: 12px;
-            color: #94a3b8;
+            color: #cccccc;
         }
         
         .controls {
-            background: #1e293b;
-            border-radius: 12px;
+            background: #111111;
+            border-radius: 10px;
             padding: 15px;
             margin-bottom: 15px;
-            border: 1px solid #475569;
+            border: 1px solid #333333;
+        }
+        
+        .control-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
         }
         
         .control-group {
-            margin-bottom: 12px;
+            flex: 1;
+            min-width: 120px;
         }
         
         .control-group label {
             display: block;
-            font-size: 12px;
-            color: #cbd5e1;
+            font-size: 11px;
+            color: #cccccc;
             margin-bottom: 5px;
         }
         
-        .input-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        
         select, input {
-            flex: 1;
+            width: 100%;
             padding: 10px;
+            border: 1px solid #333333;
             border-radius: 8px;
-            border: 1px solid #475569;
-            background: #0f172a;
-            color: white;
+            background: #000000;
+            color: #ffffff;
             font-size: 14px;
+            outline: none;
         }
         
         .button {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: white;
-            border: none;
+            background: #2d2d2d;
+            color: #ffffff;
+            border: 1px solid #444444;
             padding: 12px;
             border-radius: 8px;
             font-weight: 600;
+            font-size: 14px;
             cursor: pointer;
             width: 100%;
-            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .button:hover {
+            background: #3d3d3d;
         }
         
         .chart-container {
-            background: #1e293b;
-            border-radius: 12px;
+            background: #111111;
+            border-radius: 10px;
             padding: 10px;
             margin-bottom: 15px;
-            border: 1px solid #475569;
-            height: 500px;
+            border: 1px solid #333333;
+            height: 65vh; /* Занимает 65% высоты окна */
+            min-height: 400px;
             position: relative;
         }
         
         #chart {
             width: 100%;
             height: 100%;
-            border-radius: 8px;
-        }
-        
-        .status-bar {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .status-item {
-            background: #1e293b;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #475569;
-        }
-        
-        .status-label {
-            font-size: 11px;
-            color: #94a3b8;
-            margin-bottom: 4px;
-        }
-        
-        .status-value {
-            font-size: 14px;
-            font-weight: 600;
-        }
-        
-        .trend-up { color: #22c55e; }
-        .trend-down { color: #ef4444; }
-        .trend-neutral { color: #94a3b8; }
-        
-        .targets {
-            background: #1e293b;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid #475569;
-        }
-        
-        .targets-title {
-            font-size: 14px;
-            margin-bottom: 10px;
-            color: #cbd5e1;
-        }
-        
-        .targets-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-        
-        .target-item {
-            background: #0f172a;
-            padding: 10px;
-            border-radius: 8px;
-            border-left: 4px solid #3b82f6;
-        }
-        
-        .target-name {
-            font-size: 11px;
-            color: #94a3b8;
-            margin-bottom: 2px;
-        }
-        
-        .target-price {
-            font-size: 13px;
-            font-weight: 600;
-        }
-        
-        .telegram-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
-        .tg-btn {
-            flex: 1;
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-        
-        .tg-btn-primary {
-            background: linear-gradient(135deg, #0088cc 0%, #006699 100%);
-            color: white;
-        }
-        
-        .tg-btn-secondary {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
         }
         
         .loading {
@@ -211,11 +122,12 @@
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
+            color: #cccccc;
         }
         
         .spinner {
-            border: 3px solid #334155;
-            border-top: 3px solid #3b82f6;
+            border: 3px solid #333333;
+            border-top: 3px solid #ffffff;
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -228,6 +140,89 @@
             100% { transform: rotate(360deg); }
         }
         
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .status-card {
+            background: #111111;
+            border: 1px solid #333333;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        
+        .status-label {
+            font-size: 10px;
+            color: #cccccc;
+            margin-bottom: 4px;
+        }
+        
+        .status-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        
+        .trend-up { color: #00ff00; }
+        .trend-down { color: #ff0000; }
+        
+        .targets-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .target-card {
+            background: #111111;
+            border: 1px solid #333333;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        
+        .target-card.stop { border-left: 4px solid #ff0000; }
+        .target-card.entry { border-left: 4px solid #0088ff; }
+        .target-card.profit { border-left: 4px solid #00ff00; }
+        
+        .target-name {
+            font-size: 10px;
+            color: #cccccc;
+            margin-bottom: 4px;
+        }
+        
+        .target-price {
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .price-stop { color: #ff0000; }
+        .price-entry { color: #0088ff; }
+        .price-profit { color: #00ff00; }
+        
+        .telegram-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .tg-btn {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #333333;
+            border-radius: 8px;
+            background: #2d2d2d;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
         .hidden {
             display: none;
         }
@@ -237,119 +232,123 @@
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-            color: white;
+            background: #111111;
+            color: #ffffff;
             padding: 12px 20px;
             border-radius: 8px;
+            border: 1px solid #333333;
             z-index: 1000;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            animation: slideDown 0.3s ease;
+            text-align: center;
+            min-width: 250px;
         }
         
-        .signal-alert.down {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        }
-        
-        @keyframes slideDown {
-            from { top: -100px; }
-            to { top: 20px; }
+        @media (max-width: 768px) {
+            .status-grid,
+            .targets-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .telegram-buttons {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Trend_1H [☆GREAT ANNA☆]</h1>
-            <p>Профессиональный индикатор тренда и целей</p>
+            <h1>TREND_1H FUTURES</h1>
+            <p>Real-time Binance Futures Trading Indicator</p>
         </div>
         
         <div class="controls">
-            <div class="control-group">
-                <label>Торговая пара</label>
-                <div class="input-row">
+            <div class="control-row">
+                <div class="control-group">
+                    <label>Futures Symbol</label>
                     <select id="symbol">
-                        <option value="BTCUSDT">BTC/USDT</option>
-                        <option value="ETHUSDT">ETH/USDT</option>
-                        <option value="BNBUSDT">BNB/USDT</option>
-                        <option value="SOLUSDT">SOL/USDT</option>
-                        <option value="XRPUSDT">XRP/USDT</option>
-                        <option value="ADAUSDT">ADA/USDT</option>
-                        <option value="DOTUSDT">DOT/USDT</option>
-                        <option value="DOGEUSDT">DOGE/USDT</option>
+                        <!-- Will be populated by JavaScript -->
                     </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>Timeframe</label>
                     <select id="timeframe">
-                        <option value="5m">5 минут</option>
-                        <option value="15m">15 минут</option>
-                        <option value="1h" selected>1 час</option>
-                        <option value="4h">4 часа</option>
-                        <option value="1d">1 день</option>
+                        <option value="1m">1 Minute</option>
+                        <option value="5m">5 Minutes</option>
+                        <option value="15m">15 Minutes</option>
+                        <option value="30m">30 Minutes</option>
+                        <option value="1h" selected>1 Hour</option>
+                        <option value="4h">4 Hours</option>
                     </select>
                 </div>
             </div>
             
-            <div class="control-group">
-                <label>Настройки индикатора</label>
-                <div class="input-row">
-                    <input type="number" id="trendLength" value="10" min="1" max="50" placeholder="Длина тренда">
-                    <input type="number" id="targetMultiplier" value="0" min="0" max="10" placeholder="Множитель целей">
+            <div class="control-row">
+                <div class="control-group">
+                    <label>Trend Length</label>
+                    <input type="number" id="trendLength" value="10" min="5" max="50">
                 </div>
-                <div class="input-row">
-                    <input type="number" id="atrPeriod" value="20" min="5" max="50" placeholder="Период ATR">
-                    <input type="number" id="atrMultiplier" value="0.3" min="0.1" max="1" step="0.1" placeholder="Множитель ATR">
+                
+                <div class="control-group">
+                    <label>Target Multiplier</label>
+                    <input type="number" id="targetMult" value="0" min="0" max="10">
+                </div>
+                
+                <div class="control-group">
+                    <label>ATR Period</label>
+                    <input type="number" id="atrPeriod" value="20" min="10" max="50">
                 </div>
             </div>
             
-            <button class="button" id="updateBtn">🔄 Обновить график</button>
+            <button class="button" id="updateBtn">Update Chart</button>
         </div>
         
         <div class="chart-container">
-            <div id="chart"></div>
+            <canvas id="chart"></canvas>
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                <p>Загрузка графика...</p>
+                <p>Loading chart data...</p>
             </div>
         </div>
         
-        <div class="status-bar">
-            <div class="status-item">
-                <div class="status-label">Тренд</div>
-                <div class="status-value" id="trendStatus">Загрузка...</div>
+        <div class="status-grid">
+            <div class="status-card">
+                <div class="status-label">Trend</div>
+                <div class="status-value" id="trendStatus">Loading...</div>
             </div>
-            <div class="status-item">
-                <div class="status-label">Символ</div>
-                <div class="status-value" id="symbolStatus">BTC/USDT</div>
+            
+            <div class="status-card">
+                <div class="status-label">Price</div>
+                <div class="status-value" id="priceStatus">0.00</div>
             </div>
-            <div class="status-item">
+            
+            <div class="status-card">
                 <div class="status-label">ATR</div>
-                <div class="status-value" id="atrValue">0.00</div>
+                <div class="status-value" id="atrStatus">0.00</div>
             </div>
-            <div class="status-item">
-                <div class="status-label">Цена</div>
-                <div class="status-value" id="priceValue">0.00</div>
+            
+            <div class="status-card">
+                <div class="status-label">Last Update</div>
+                <div class="status-value" id="updateStatus">--:--:--</div>
             </div>
         </div>
         
-        <div class="targets">
-            <div class="targets-title">🎯 Цели и стоп-лосс</div>
-            <div class="targets-grid" id="targetsGrid">
-                <!-- Targets will be added here -->
-            </div>
+        <div class="targets-grid" id="targetsGrid">
+            <!-- Targets will be populated by JavaScript -->
         </div>
         
         <div class="telegram-buttons">
-            <button class="tg-btn tg-btn-primary" id="shareBtn">
-                📤 Поделиться
+            <button class="tg-btn" id="shareBtn">
+                📤 Share Signal
             </button>
-            <button class="tg-btn tg-btn-secondary" id="fullscreenBtn">
-                📊 Полный экран
+            <button class="tg-btn" id="fullscreenBtn">
+                📊 Fullscreen
             </button>
         </div>
     </div>
 
-    <!-- Lightweight Charts -->
-    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.0.1/dist/lightweight-charts.standalone.production.js"></script>
-    
-    <!-- Main App -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script src="app.js"></script>
 </body>
 </html>
