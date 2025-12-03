@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TREND_1H FUTURES</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -14,7 +13,7 @@
         }
         
         body {
-            font-family: 'Orbitron', monospace;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #000000;
             color: #ffffff;
             height: 100vh;
@@ -36,66 +35,54 @@
         }
         
         .header {
-            padding: 15px 15px 12px;
-            background: linear-gradient(135deg, #0a0a0a 0%, #111 100%);
-            border-bottom: 2px solid #00ccff;
+            padding: 12px 15px;
+            background: #111;
+            border-bottom: 1px solid #333;
             flex-shrink: 0;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0, 204, 255, 0.1);
         }
         
         .header h1 {
-            font-size: 22px;
-            color: #00ffea;
-            margin-bottom: 5px;
-            text-shadow: 0 0 10px rgba(0, 255, 234, 0.5);
-            letter-spacing: 1px;
+            font-size: 18px;
+            text-align: center;
+            color: #fff;
+            margin-bottom: 3px;
         }
         
         .header p {
             font-size: 11px;
-            color: #88ffff;
-            opacity: 0.8;
-            letter-spacing: 0.5px;
+            text-align: center;
+            color: #888;
         }
         
         .controls {
-            padding: 15px;
-            background: #0a0a0a;
-            border-bottom: 1px solid #222;
+            padding: 12px 15px;
+            background: #111;
+            border-bottom: 1px solid #333;
             flex-shrink: 0;
         }
         
         .symbol-row {
             display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 8px;
+            margin-bottom: 12px;
         }
         
         select {
             flex: 1;
-            padding: 12px 15px;
+            padding: 10px;
             background: #000;
-            border: 1px solid #00ccff;
-            border-radius: 8px;
-            color: #ffffff;
-            font-family: 'Orbitron', monospace;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #fff;
             font-size: 14px;
-            height: 46px;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-        
-        select:focus {
-            border-color: #00ffea;
-            box-shadow: 0 0 10px rgba(0, 255, 234, 0.3);
+            height: 40px;
         }
         
         .settings {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 15px;
+            gap: 8px;
+            margin-bottom: 12px;
         }
         
         .setting {
@@ -105,91 +92,43 @@
         
         .setting label {
             font-size: 11px;
-            color: #88ffff;
-            margin-bottom: 6px;
-            letter-spacing: 0.5px;
+            color: #888;
+            margin-bottom: 4px;
         }
         
         .setting input {
-            padding: 12px;
+            padding: 8px;
             background: #000;
             border: 1px solid #333;
-            border-radius: 6px;
-            color: #ffffff;
-            font-family: 'Orbitron', monospace;
-            font-size: 14px;
-            height: 44px;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-        
-        .setting input:focus {
-            border-color: #00ccff;
-            box-shadow: 0 0 8px rgba(0, 204, 255, 0.3);
+            border-radius: 5px;
+            color: #fff;
+            font-size: 13px;
+            height: 36px;
         }
         
         .btn-update {
             width: 100%;
-            padding: 16px;
-            background: #e0e0e0;
+            padding: 12px;
+            background: #0066cc;
             border: none;
-            border-radius: 10px;
-            color: #000;
-            font-family: 'Orbitron', monospace;
-            font-size: 16px;
-            font-weight: 700;
+            border-radius: 6px;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
-            height: 52px;
-            margin-bottom: 10px;
-            transition: all 0.3s ease;
-            letter-spacing: 1px;
-            text-transform: uppercase;
+            height: 44px;
         }
         
         .btn-update:hover {
-            background: #f0f0f0;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
-        }
-        
-        .btn-update:active {
-            transform: translateY(0);
-        }
-        
-        .btn-apply {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #0066cc 0%, #0099ff 100%);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-family: 'Orbitron', monospace;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            height: 52px;
-            transition: all 0.3s ease;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        
-        .btn-apply:hover {
-            background: linear-gradient(135deg, #0099ff 0%, #00ccff 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 153, 255, 0.4);
-        }
-        
-        .btn-apply:active {
-            transform: translateY(0);
+            background: #0055aa;
         }
         
         .chart-wrapper {
-            height: 340px;
+            height: 320px;
             position: relative;
             background: #000;
             flex-shrink: 0;
             margin: 0;
-            border-bottom: 1px solid #222;
         }
         
         #chart {
@@ -203,23 +142,21 @@
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            color: #88ffff;
+            color: #888;
             z-index: 1000;
-            background: rgba(0, 0, 0, 0.9);
-            padding: 30px;
-            border-radius: 15px;
-            border: 1px solid #00ccff;
-            box-shadow: 0 0 30px rgba(0, 204, 255, 0.3);
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 8px;
         }
         
         .spinner {
-            border: 3px solid #0a0a0a;
-            border-top: 3px solid #00ffea;
+            border: 3px solid #333;
+            border-top: 3px solid #0066cc;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 0 auto 10px;
         }
         
         @keyframes spin {
@@ -228,142 +165,113 @@
         }
         
         .info-panel {
-            padding: 15px;
-            background: #0a0a0a;
-            border-top: 1px solid #222;
+            padding: 12px 15px;
+            background: #111;
+            border-top: 1px solid #333;
             flex-shrink: 0;
         }
         
         .status {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 15px;
+            gap: 8px;
+            margin-bottom: 12px;
         }
         
         .status-item {
-            background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
-            padding: 15px;
-            border-radius: 10px;
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 6px;
             text-align: center;
             border: 1px solid #333;
-            transition: all 0.3s ease;
-        }
-        
-        .status-item:hover {
-            border-color: #00ccff;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 204, 255, 0.1);
         }
         
         .status-label {
             font-size: 10px;
-            color: #88ffff;
-            margin-bottom: 8px;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
+            color: #888;
+            margin-bottom: 4px;
         }
         
         .status-value {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             color: #fff;
-            font-family: 'Orbitron', monospace;
+            font-family: 'Courier New', monospace;
         }
         
         .trend-up {
-            color: #00ff88 !important;
-            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+            color: #00ff00;
         }
         
         .trend-down {
-            color: #ff3366 !important;
-            text-shadow: 0 0 10px rgba(255, 51, 102, 0.5);
+            color: #ff0000;
         }
         
         .targets-container {
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
         
         .targets {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            gap: 8px;
         }
         
         .target {
-            background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
-            padding: 15px;
-            border-radius: 10px;
-            border-left: 4px solid;
-            transition: all 0.3s ease;
-        }
-        
-        .target:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 3px solid;
         }
         
         .target.stop {
-            border-left-color: #ff3366;
+            border-left-color: #ff0000;
         }
         
         .target.entry {
-            border-left-color: #00ccff;
+            border-left-color: #0066cc;
         }
         
         .target.profit {
-            border-left-color: #00ff88;
+            border-left-color: #00ff00;
         }
         
         .target-name {
             font-size: 10px;
-            color: #88ffff;
-            margin-bottom: 8px;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
+            color: #888;
+            margin-bottom: 4px;
         }
         
         .target-value {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 600;
-            font-family: 'Orbitron', monospace;
+            font-family: 'Courier New', monospace;
         }
         
         .buttons {
             display: flex;
-            gap: 12px;
+            gap: 8px;
         }
         
         .btn {
             flex: 1;
-            padding: 14px;
-            background: linear-gradient(135deg, #222 0%, #333 100%);
+            padding: 10px;
+            background: #333;
             border: 1px solid #444;
-            border-radius: 10px;
+            border-radius: 6px;
             color: white;
-            font-weight: 700;
+            font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
             font-size: 12px;
-            height: 46px;
-            font-family: 'Orbitron', monospace;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            height: 40px;
         }
         
         .btn:hover {
-            background: linear-gradient(135deg, #333 0%, #444 100%);
-            border-color: #00ccff;
-            transform: translateY(-2px);
-        }
-        
-        .btn:active {
-            transform: translateY(0);
+            background: #444;
         }
         
         .hidden {
@@ -372,54 +280,20 @@
         
         /* Scrollbar styling */
         .scroll-container::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
         }
         
         .scroll-container::-webkit-scrollbar-track {
             background: #111;
-            border-radius: 4px;
         }
         
         .scroll-container::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #00ccff 0%, #0099ff 100%);
-            border-radius: 4px;
+            background: #333;
+            border-radius: 3px;
         }
         
         .scroll-container::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, #00ffea 0%, #00ccff 100%);
-        }
-        
-        /* Notification styles */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 25px;
-            background: linear-gradient(135deg, #0066cc 0%, #0099ff 100%);
-            color: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 20px rgba(0, 102, 204, 0.4);
-            z-index: 9999;
-            font-family: 'Orbitron', monospace;
-            animation: slideIn 0.3s ease;
-            border: 1px solid #00ccff;
-            max-width: 300px;
-        }
-        
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        /* Sound effect element */
-        #soundEffect {
-            display: none;
+            background: #444;
         }
     </style>
 </head>
@@ -428,7 +302,7 @@
         <div class="scroll-container">
             <div class="header">
                 <h1>TREND_1H FUTURES</h1>
-                <p>PROFESSIONAL TRADING SYSTEM</p>
+                <p>Professional Trading System</p>
             </div>
             
             <div class="controls">
@@ -437,44 +311,38 @@
                         <!-- Symbols will be populated by JavaScript -->
                     </select>
                     <select id="timeframe">
-                        <option value="1m">1 MIN</option>
-                        <option value="5m">5 MIN</option>
-                        <option value="15m">15 MIN</option>
-                        <option value="30m">30 MIN</option>
-                        <option value="1h" selected>1 HOUR</option>
-                        <option value="4h">4 HOURS</option>
+                        <option value="1m">1 Min</option>
+                        <option value="5m">5 Min</option>
+                        <option value="15m">15 Min</option>
+                        <option value="30m">30 Min</option>
+                        <option value="1h" selected>1 Hour</option>
+                        <option value="4h">4 Hours</option>
                     </select>
                 </div>
                 
                 <div class="settings">
                     <div class="setting">
-                        <label>TREND LENGTH</label>
+                        <label>Trend Length</label>
                         <input type="number" id="trendLength" value="10" min="5" max="50">
                     </div>
                     <div class="setting">
-                        <label>TARGET MULTIPLIER</label>
+                        <label>Target Multiplier</label>
                         <input type="number" id="targetMultiplier" value="0" min="0" max="10">
                     </div>
                     <div class="setting">
-                        <label>ATR PERIOD</label>
+                        <label>ATR Period</label>
                         <input type="number" id="atrPeriod" value="20" min="10" max="50">
                     </div>
                 </div>
                 
-                <button class="btn-update" id="updateBtn">
-                    🔄 UPDATE CHART
-                </button>
-                
-                <button class="btn-apply" id="applyBtn">
-                    ⚙️ APPLY SETTINGS
-                </button>
+                <button class="btn-update" id="updateBtn">UPDATE CHART</button>
             </div>
             
             <div class="chart-wrapper">
                 <div id="chart"></div>
                 <div class="loading hidden" id="loading">
                     <div class="spinner"></div>
-                    <p>LOADING CHART DATA...</p>
+                    <p>Loading chart data...</p>
                 </div>
             </div>
             
@@ -519,19 +387,8 @@
         </div>
     </div>
 
-    <!-- Audio for sound effects -->
-    <audio id="clickSound">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-select-click-1109.mp3" type="audio/mpeg">
-    </audio>
-    
-    <audio id="notificationSound">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3" type="audio/mpeg">
-    </audio>
-
-    <!-- Notification container -->
-    <div id="notificationContainer"></div>
-
     <script src="https://unpkg.com/lightweight-charts@4.0.1/dist/lightweight-charts.standalone.production.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
+
