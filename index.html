@@ -16,41 +16,40 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #000000;
             color: #ffffff;
-            overflow-x: hidden;
             height: 100vh;
+            overflow: hidden;
         }
         
-        .container {
+        #app {
             height: 100vh;
             display: flex;
             flex-direction: column;
-            background: #000000;
         }
         
         .header {
-            padding: 12px 15px;
-            background: #111111;
-            border-bottom: 1px solid #333333;
+            padding: 15px;
+            background: #111;
+            border-bottom: 1px solid #333;
             flex-shrink: 0;
         }
         
         .header h1 {
-            font-size: 18px;
-            color: #ffffff;
+            font-size: 20px;
             text-align: center;
-            margin-bottom: 4px;
+            color: #fff;
+            margin-bottom: 5px;
         }
         
         .header p {
-            font-size: 11px;
-            color: #cccccc;
+            font-size: 12px;
             text-align: center;
+            color: #888;
         }
         
         .controls {
             padding: 15px;
-            background: #111111;
-            border-bottom: 1px solid #333333;
+            background: #111;
+            border-bottom: 1px solid #333;
             flex-shrink: 0;
         }
         
@@ -62,65 +61,61 @@
         
         select {
             flex: 1;
-            padding: 10px 12px;
-            border: 1px solid #333333;
+            padding: 12px;
+            background: #000;
+            border: 1px solid #333;
             border-radius: 8px;
-            background: #000000;
-            color: #ffffff;
+            color: #fff;
             font-size: 14px;
-            outline: none;
         }
         
-        .settings-grid {
+        .settings {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             margin-bottom: 15px;
         }
         
-        .setting-group {
+        .setting {
             display: flex;
             flex-direction: column;
         }
         
-        .setting-group label {
-            font-size: 11px;
-            color: #cccccc;
+        .setting label {
+            font-size: 12px;
+            color: #888;
             margin-bottom: 5px;
         }
         
-        .setting-group input {
-            padding: 10px 12px;
-            border: 1px solid #333333;
-            border-radius: 8px;
-            background: #000000;
-            color: #ffffff;
+        .setting input {
+            padding: 10px;
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #fff;
             font-size: 14px;
-            outline: none;
         }
         
-        .button {
-            background: #2d2d2d;
-            color: #ffffff;
-            border: 1px solid #444444;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
+        .btn-update {
             width: 100%;
-            transition: background 0.2s;
+            padding: 14px;
+            background: #0066cc;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
         }
         
-        .button:hover {
-            background: #3d3d3d;
+        .btn-update:hover {
+            background: #0055aa;
         }
         
-        .chart-container {
+        .chart-wrapper {
             flex: 1;
             position: relative;
-            background: #000000;
-            overflow: hidden;
+            background: #000;
         }
         
         #chart {
@@ -130,27 +125,25 @@
         
         .loading {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 100;
-            color: #cccccc;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #888;
+            z-index: 1000;
+            background: rgba(0,0,0,0.8);
+            padding: 30px;
+            border-radius: 10px;
         }
         
         .spinner {
-            border: 3px solid #333333;
-            border-top: 3px solid #ffffff;
+            border: 4px solid #333;
+            border-top: 4px solid #0066cc;
             border-radius: 50%;
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
-            margin-bottom: 15px;
+            margin: 0 auto 15px;
         }
         
         @keyframes spin {
@@ -160,192 +153,169 @@
         
         .info-panel {
             padding: 15px;
-            background: #111111;
-            border-top: 1px solid #333333;
+            background: #111;
+            border-top: 1px solid #333;
             flex-shrink: 0;
         }
         
-        .status-grid {
+        .status {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 10px;
             margin-bottom: 15px;
         }
         
-        .status-card {
+        .status-item {
             background: #1a1a1a;
-            border: 1px solid #333333;
-            border-radius: 8px;
             padding: 12px;
+            border-radius: 8px;
             text-align: center;
+            border: 1px solid #333;
         }
         
         .status-label {
-            font-size: 10px;
-            color: #cccccc;
+            font-size: 11px;
+            color: #888;
             margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
         
         .status-value {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 600;
-            color: #ffffff;
+            color: #fff;
         }
         
-        .trend-up { color: #00ff00; }
-        .trend-down { color: #ff0000; }
+        .trend-up {
+            color: #00ff00;
+        }
         
-        .targets-grid {
+        .trend-down {
+            color: #ff0000;
+        }
+        
+        .targets {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             margin-bottom: 15px;
         }
         
-        .target-card {
+        .target {
             background: #1a1a1a;
-            border: 1px solid;
+            padding: 12px;
             border-radius: 8px;
-            padding: 10px;
-            text-align: center;
+            border-left: 4px solid;
         }
         
-        .target-card.stop { border-color: #ff0000; }
-        .target-card.entry { border-color: #0088ff; }
-        .target-card.profit { border-color: #00ff00; }
+        .target.stop {
+            border-left-color: #ff0000;
+        }
+        
+        .target.entry {
+            border-left-color: #0066cc;
+        }
+        
+        .target.profit {
+            border-left-color: #00ff00;
+        }
         
         .target-name {
-            font-size: 10px;
-            color: #cccccc;
-            margin-bottom: 4px;
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 5px;
         }
         
-        .target-price {
-            font-size: 13px;
+        .target-value {
+            font-size: 14px;
             font-weight: 600;
         }
         
-        .price-stop { color: #ff0000; }
-        .price-entry { color: #0088ff; }
-        .price-profit { color: #00ff00; }
+        .value-stop {
+            color: #ff0000;
+        }
         
-        .buttons-row {
+        .value-entry {
+            color: #0066cc;
+        }
+        
+        .value-profit {
+            color: #00ff00;
+        }
+        
+        .buttons {
             display: flex;
             gap: 10px;
         }
         
-        .tg-btn {
+        .btn {
             flex: 1;
             padding: 12px;
-            border: 1px solid #333333;
+            background: #333;
+            border: 1px solid #444;
             border-radius: 8px;
-            background: #2d2d2d;
-            color: #ffffff;
+            color: white;
             font-weight: 600;
-            font-size: 12px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            transition: background 0.2s;
+            gap: 8px;
         }
         
-        .tg-btn:hover {
-            background: #3d3d3d;
+        .btn:hover {
+            background: #444;
         }
         
         .hidden {
             display: none;
         }
-        
-        .error-message {
-            background: rgba(255, 0, 0, 0.1);
-            border: 1px solid #ff0000;
-            color: #ff9999;
-            padding: 12px;
-            border-radius: 8px;
-            margin: 15px;
-            font-size: 13px;
-            text-align: center;
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            max-width: 90%;
-        }
-        
-        @media (max-width: 768px) {
-            .settings-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .status-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .targets-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .settings-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .targets-grid {
-                grid-template-columns: 1fr;
-            }
-        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div id="app">
         <div class="header">
-            <h1>TREND_1H FUTURES INDICATOR</h1>
+            <h1>TREND_1H FUTURES</h1>
             <p>Professional Trading System</p>
         </div>
         
         <div class="controls">
             <div class="symbol-row">
                 <select id="symbol">
-                    <!-- Will be populated by JavaScript -->
+                    <option value="BTCUSDT">BTC/USDT</option>
+                    <option value="ETHUSDT">ETH/USDT</option>
+                    <option value="BNBUSDT">BNB/USDT</option>
+                    <option value="SOLUSDT">SOL/USDT</option>
+                    <option value="XRPUSDT">XRP/USDT</option>
                 </select>
                 <select id="timeframe">
-                    <option value="1m">1 Minute</option>
-                    <option value="5m">5 Minutes</option>
-                    <option value="15m">15 Minutes</option>
-                    <option value="30m">30 Minutes</option>
+                    <option value="1m">1 Min</option>
+                    <option value="5m">5 Min</option>
+                    <option value="15m">15 Min</option>
+                    <option value="30m">30 Min</option>
                     <option value="1h" selected>1 Hour</option>
                     <option value="4h">4 Hours</option>
                 </select>
             </div>
             
-            <div class="settings-grid">
-                <div class="setting-group">
+            <div class="settings">
+                <div class="setting">
                     <label>Trend Length</label>
-                    <input type="number" id="trendLength" value="10" min="1" max="50">
+                    <input type="number" id="trendLength" value="10" min="5" max="50">
                 </div>
-                
-                <div class="setting-group">
+                <div class="setting">
                     <label>Target Multiplier</label>
                     <input type="number" id="targetMultiplier" value="0" min="0" max="10">
                 </div>
-                
-                <div class="setting-group">
+                <div class="setting">
                     <label>ATR Period</label>
-                    <input type="number" id="atrPeriod" value="20" min="5" max="50">
+                    <input type="number" id="atrPeriod" value="20" min="10" max="50">
                 </div>
             </div>
             
-            <button class="button" id="updateBtn">Update Chart</button>
+            <button class="btn-update" id="updateBtn">UPDATE CHART</button>
         </div>
         
-        <div class="chart-container">
+        <div class="chart-wrapper">
             <div id="chart"></div>
             <div class="loading" id="loading">
                 <div class="spinner"></div>
@@ -354,44 +324,40 @@
         </div>
         
         <div class="info-panel">
-            <div class="status-grid">
-                <div class="status-card">
-                    <div class="status-label">Trend</div>
-                    <div class="status-value" id="trendStatus">-</div>
+            <div class="status">
+                <div class="status-item">
+                    <div class="status-label">TREND</div>
+                    <div class="status-value" id="trendValue">-</div>
                 </div>
-                
-                <div class="status-card">
-                    <div class="status-label">Price</div>
-                    <div class="status-value" id="priceStatus">0.00</div>
+                <div class="status-item">
+                    <div class="status-label">PRICE</div>
+                    <div class="status-value" id="priceValue">0.00</div>
                 </div>
-                
-                <div class="status-card">
-                    <div class="status-label">ATR Value</div>
-                    <div class="status-value" id="atrStatus">0.00</div>
+                <div class="status-item">
+                    <div class="status-label">ATR</div>
+                    <div class="status-value" id="atrValue">0.00</div>
                 </div>
-                
-                <div class="status-card">
-                    <div class="status-label">SMA High</div>
-                    <div class="status-value" id="smaHighStatus">0.00</div>
+                <div class="status-item">
+                    <div class="status-label">SMA HIGH</div>
+                    <div class="status-value" id="smaHighValue">0.00</div>
                 </div>
             </div>
             
-            <div class="targets-grid" id="targetsGrid">
-                <!-- Targets will be populated by JavaScript -->
+            <div class="targets" id="targetsContainer">
+                <!-- Targets will be added here -->
             </div>
             
-            <div class="buttons-row">
-                <button class="tg-btn" id="shareBtn">
-                    📤 Share Signal
+            <div class="buttons">
+                <button class="btn" id="shareBtn">
+                    📤 SHARE SIGNAL
                 </button>
-                <button class="tg-btn" id="fullscreenBtn">
-                    📊 Fullscreen
+                <button class="btn" id="fullscreenBtn">
+                    📊 FULLSCREEN
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Используем UMD версию Lightweight Charts -->
     <script src="https://unpkg.com/lightweight-charts@4.0.1/dist/lightweight-charts.standalone.production.js"></script>
     <script src="app.js"></script>
 </body>
