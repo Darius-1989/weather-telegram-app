@@ -1,80 +1,143 @@
-
-          <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TREND_1H FUTURES</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TREND_1H FUTURES | PRO TRADING</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
         
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #000000;
-            color: #ffffff;
-            height: 100vh;
+        html, body {
+            height: 100%;
             overflow: hidden;
+            font-family: 'Exo 2', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #111 50%, #0a0a0a 100%);
+            color: #ffffff;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        
+        body::-webkit-scrollbar {
+            display: none;
         }
         
         #app {
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .header {
-            padding: 15px;
-            background: #111;
-            border-bottom: 1px solid #333;
-            flex-shrink: 0;
+            padding: 18px 20px 15px;
+            background: linear-gradient(to bottom, #111 0%, #0a0a0a 100%);
+            border-bottom: 1px solid rgba(0, 102, 204, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #0066cc 0%, #00ffaa 50%, #0066cc 100%);
         }
         
         .header h1 {
-            font-size: 20px;
+            font-family: 'Orbitron', monospace;
+            font-size: 22px;
+            font-weight: 700;
             text-align: center;
-            color: #fff;
-            margin-bottom: 5px;
+            background: linear-gradient(90deg, #00ffaa, #0066cc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            text-shadow: 0 0 20px rgba(0, 102, 204, 0.3);
         }
         
         .header p {
-            font-size: 12px;
+            font-size: 11px;
             text-align: center;
             color: #888;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            font-weight: 500;
         }
         
         .controls {
-            padding: 15px;
-            background: #111;
-            border-bottom: 1px solid #333;
-            flex-shrink: 0;
+            padding: 18px;
+            background: rgba(15, 15, 15, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            animation: slideDown 0.5s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .symbol-row {
             display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 12px;
+            margin-bottom: 18px;
         }
         
         select {
             flex: 1;
-            padding: 12px;
-            background: #000;
-            border: 1px solid #333;
-            border-radius: 8px;
-            color: #fff;
+            padding: 14px 15px;
+            background: linear-gradient(145deg, #1a1a1a, #111);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            color: #ffffff;
+            font-family: 'Exo 2', sans-serif;
             font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 12px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        select:hover {
+            border-color: rgba(0, 102, 204, 0.5);
+            box-shadow: 0 0 0 1px rgba(0, 102, 204, 0.2);
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #0066cc;
+            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.3);
         }
         
         .settings {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 12px;
+            margin-bottom: 18px;
         }
         
         .setting {
@@ -83,40 +146,101 @@
         }
         
         .setting label {
-            font-size: 12px;
+            font-size: 11px;
             color: #888;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
         
         .setting input {
-            padding: 10px;
-            background: #000;
-            border: 1px solid #333;
-            border-radius: 6px;
-            color: #fff;
+            padding: 13px 12px;
+            background: linear-gradient(145deg, #1a1a1a, #111);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            color: #ffffff;
+            font-family: 'Exo 2', sans-serif;
             font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .setting input:focus {
+            outline: none;
+            border-color: #0066cc;
+            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
         }
         
         .btn-update {
             width: 100%;
-            padding: 14px;
-            background: #0066cc;
+            padding: 16px;
+            background: linear-gradient(135deg, #0066cc 0%, #0044aa 100%);
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             color: white;
-            font-size: 16px;
+            font-family: 'Orbitron', monospace;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(0, 102, 204, 0.4);
+            position: relative;
+            overflow: hidden;
         }
         
         .btn-update:hover {
-            background: #0055aa;
+            background: linear-gradient(135deg, #0077ee 0%, #0055cc 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 102, 204, 0.5);
         }
         
-        .chart-wrapper {
+        .btn-update:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(0, 102, 204, 0.3);
+        }
+        
+        .btn-update::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+        
+        .btn-update:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+        
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+        
+        .chart-container {
             flex: 1;
-            position: relative;
+            min-height: 350px;
+            max-height: 50vh;
             background: #000;
+            position: relative;
+            overflow: hidden;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
         
         #chart {
@@ -126,25 +250,29 @@
         
         .loading {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: #888;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 10, 10, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             z-index: 1000;
-            background: rgba(0,0,0,0.8);
-            padding: 30px;
-            border-radius: 10px;
+            backdrop-filter: blur(10px);
         }
         
         .spinner {
-            border: 4px solid #333;
-            border-top: 4px solid #0066cc;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #0066cc;
+            border-right: 3px solid #00ffaa;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite, colorShift 3s linear infinite;
+            margin-bottom: 20px;
+            box-shadow: 0 0 20px rgba(0, 102, 204, 0.3);
         }
         
         @keyframes spin {
@@ -152,64 +280,108 @@
             100% { transform: rotate(360deg); }
         }
         
+        @keyframes colorShift {
+            0%, 100% { border-top-color: #0066cc; border-right-color: #00ffaa; }
+            50% { border-top-color: #00ffaa; border-right-color: #0066cc; }
+        }
+        
+        .loading p {
+            color: #888;
+            font-size: 14px;
+            font-weight: 500;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
         .info-panel {
-            padding: 15px;
-            background: #111;
-            border-top: 1px solid #333;
-            flex-shrink: 0;
+            padding: 18px;
+            background: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(10px);
+            animation: slideUp 0.5s ease-out;
+            border-top: 1px solid rgba(0, 102, 204, 0.3);
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .status {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 12px;
+            margin-bottom: 18px;
         }
         
         .status-item {
-            background: #1a1a1a;
-            padding: 12px;
-            border-radius: 8px;
+            background: linear-gradient(145deg, #1a1a1a, #111);
+            padding: 15px 10px;
+            border-radius: 10px;
             text-align: center;
-            border: 1px solid #333;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .status-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            border-color: rgba(0, 102, 204, 0.2);
         }
         
         .status-label {
-            font-size: 11px;
+            font-size: 10px;
             color: #888;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            font-weight: 500;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
         }
         
         .status-value {
+            font-family: 'Orbitron', monospace;
             font-size: 16px;
             font-weight: 600;
             color: #fff;
         }
         
         .trend-up {
-            color: #00ff00;
+            color: #00ffaa !important;
+            text-shadow: 0 0 10px rgba(0, 255, 170, 0.3);
         }
         
         .trend-down {
-            color: #ff0000;
+            color: #ff4444 !important;
+            text-shadow: 0 0 10px rgba(255, 68, 68, 0.3);
         }
         
         .targets {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 12px;
+            margin-bottom: 18px;
         }
         
         .target {
-            background: #1a1a1a;
-            padding: 12px;
-            border-radius: 8px;
+            background: linear-gradient(145deg, #1a1a1a, #111);
+            padding: 15px 12px;
+            border-radius: 10px;
             border-left: 4px solid;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .target:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
         
         .target.stop {
-            border-left-color: #ff0000;
+            border-left-color: #ff4444;
         }
         
         .target.entry {
@@ -217,22 +389,26 @@
         }
         
         .target.profit {
-            border-left-color: #00ff00;
+            border-left-color: #00ffaa;
         }
         
         .target-name {
-            font-size: 11px;
+            font-size: 10px;
             color: #888;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            font-weight: 500;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
         }
         
         .target-value {
-            font-size: 14px;
+            font-family: 'Orbitron', monospace;
+            font-size: 15px;
             font-weight: 600;
         }
         
         .value-stop {
-            color: #ff0000;
+            color: #ff4444;
         }
         
         .value-entry {
@@ -240,35 +416,160 @@
         }
         
         .value-profit {
-            color: #00ff00;
+            color: #00ffaa;
         }
         
         .buttons {
-            display: flex;
-            gap: 10px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
         }
         
         .btn {
-            flex: 1;
-            padding: 12px;
-            background: #333;
-            border: 1px solid #444;
-            border-radius: 8px;
+            padding: 14px 10px;
+            background: linear-gradient(145deg, #1a1a1a, #111);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
             color: white;
+            font-family: 'Exo 2', sans-serif;
             font-weight: 600;
+            font-size: 13px;
             cursor: pointer;
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
         
         .btn:hover {
-            background: #444;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            border-color: rgba(0, 102, 204, 0.5);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
         }
         
         .hidden {
-            display: none;
+            display: none !important;
+        }
+        
+        .scroll-container {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 102, 204, 0.3) transparent;
+        }
+        
+        .scroll-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .scroll-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .scroll-container::-webkit-scrollbar-thumb {
+            background: rgba(0, 102, 204, 0.3);
+            border-radius: 3px;
+        }
+        
+        .scroll-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 102, 204, 0.5);
+        }
+        
+        .last-update {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 10px;
+            color: #666;
+            font-family: 'Orbitron', monospace;
+            letter-spacing: 1px;
+        }
+        
+        .price-change {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 5px;
+            animation: priceFlash 0.5s ease;
+        }
+        
+        .price-change.positive {
+            background: rgba(0, 255, 170, 0.1);
+            color: #00ffaa;
+        }
+        
+        .price-change.negative {
+            background: rgba(255, 68, 68, 0.1);
+            color: #ff4444;
+        }
+        
+        @keyframes priceFlash {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .signal-marker {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulseSignal 1s infinite;
+            z-index: 10;
+        }
+        
+        .signal-marker.buy {
+            background: #00ffaa;
+            box-shadow: 0 0 20px #00ffaa;
+        }
+        
+        .signal-marker.sell {
+            background: #ff4444;
+            box-shadow: 0 0 20px #ff4444;
+        }
+        
+        @keyframes pulseSignal {
+            0% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 0.5; transform: scale(1); }
+        }
+        
+        @media (max-height: 700px) {
+            .chart-container {
+                max-height: 40vh;
+            }
+            
+            .header {
+                padding: 12px 15px 10px;
+            }
+            
+            .header h1 {
+                font-size: 18px;
+            }
+            
+            .controls,
+            .info-panel {
+                padding: 12px;
+            }
+            
+            .targets {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .status {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
@@ -276,85 +577,90 @@
     <div id="app">
         <div class="header">
             <h1>TREND_1H FUTURES</h1>
-            <p>Professional Trading System</p>
+            <p>PROFESSIONAL TRADING SYSTEM</p>
+            <div class="last-update" id="lastUpdate">--:--:--</div>
         </div>
         
-        <div class="controls">
-            <div class="symbol-row">
-                <select id="symbol">
-                    <option value="BTCUSDT">BTC/USDT</option>
-                    <option value="ETHUSDT">ETH/USDT</option>
-                    <option value="BNBUSDT">BNB/USDT</option>
-                    <option value="SOLUSDT">SOL/USDT</option>
-                    <option value="XRPUSDT">XRP/USDT</option>
-                </select>
-                <select id="timeframe">
-                    <option value="1m">1 Min</option>
-                    <option value="5m">5 Min</option>
-                    <option value="15m">15 Min</option>
-                    <option value="30m">30 Min</option>
-                    <option value="1h" selected>1 Hour</option>
-                    <option value="4h">4 Hours</option>
-                </select>
-            </div>
-            
-            <div class="settings">
-                <div class="setting">
-                    <label>Trend Length</label>
-                    <input type="number" id="trendLength" value="10" min="5" max="50">
+        <div class="scroll-container">
+            <div class="controls">
+                <div class="symbol-row">
+                    <select id="symbol">
+                        <!-- Top 50 монет будут добавлены через JS -->
+                    </select>
+                    <select id="timeframe">
+                        <option value="1m">1 Min</option>
+                        <option value="5m">5 Min</option>
+                        <option value="15m">15 Min</option>
+                        <option value="30m">30 Min</option>
+                        <option value="1h" selected>1 Hour</option>
+                        <option value="4h">4 Hours</option>
+                    </select>
                 </div>
-                <div class="setting">
-                    <label>Target Multiplier</label>
-                    <input type="number" id="targetMultiplier" value="0" min="0" max="10">
+                
+                <div class="settings">
+                    <div class="setting">
+                        <label>Trend Length</label>
+                        <input type="number" id="trendLength" value="10" min="5" max="50">
+                    </div>
+                    <div class="setting">
+                        <label>Target Multiplier</label>
+                        <input type="number" id="targetMultiplier" value="0" min="0" max="10">
+                    </div>
+                    <div class="setting">
+                        <label>ATR Period</label>
+                        <input type="number" id="atrPeriod" value="20" min="10" max="50">
+                    </div>
                 </div>
-                <div class="setting">
-                    <label>ATR Period</label>
-                    <input type="number" id="atrPeriod" value="20" min="10" max="50">
-                </div>
-            </div>
-            
-            <button class="btn-update" id="updateBtn">UPDATE CHART</button>
-        </div>
-        
-        <div class="chart-wrapper">
-            <div id="chart"></div>
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>Loading chart data...</p>
-            </div>
-        </div>
-        
-        <div class="info-panel">
-            <div class="status">
-                <div class="status-item">
-                    <div class="status-label">TREND</div>
-                    <div class="status-value" id="trendValue">-</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">PRICE</div>
-                    <div class="status-value" id="priceValue">0.00</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">ATR</div>
-                    <div class="status-value" id="atrValue">0.00</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">SMA HIGH</div>
-                    <div class="status-value" id="smaHighValue">0.00</div>
-                </div>
-            </div>
-            
-            <div class="targets" id="targetsContainer">
-                <!-- Targets will be added here -->
-            </div>
-            
-            <div class="buttons">
-                <button class="btn" id="shareBtn">
-                    📤 SHARE SIGNAL
+                
+                <button class="btn-update" id="updateBtn">
+                    <span class="btn-text">UPDATE CHART</span>
+                    <span class="btn-icon">↻</span>
                 </button>
-                <button class="btn" id="fullscreenBtn">
-                    📊 FULLSCREEN
-                </button>
+            </div>
+            
+            <div class="chart-container">
+                <div id="chart"></div>
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>LOADING MARKET DATA...</p>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <div class="status">
+                    <div class="status-item">
+                        <div class="status-label">TREND</div>
+                        <div class="status-value" id="trendValue">-</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-label">PRICE</div>
+                        <div class="status-value" id="priceValue">0.00</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-label">ATR</div>
+                        <div class="status-value" id="atrValue">0.00</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-label">SMA HIGH</div>
+                        <div class="status-value" id="smaHighValue">0.00</div>
+                    </div>
+                </div>
+                
+                <div class="targets" id="targetsContainer">
+                    <!-- Targets will be added here -->
+                </div>
+                
+                <div class="buttons">
+                    <button class="btn" id="resetStopBtn">
+                        🔄 RESET STOP
+                    </button>
+                    <button class="btn" id="shareBtn">
+                        📤 SHARE SIGNAL
+                    </button>
+                    <button class="btn" id="fullscreenBtn">
+                        📊 FULLSCREEN
+                    </button>
+                </div>
             </div>
         </div>
     </div>
