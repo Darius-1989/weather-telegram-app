@@ -1,380 +1,297 @@
-// ============================================
-// ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP
-// ============================================
-const tg = window.Telegram.WebApp;
-
 // Инициализация Telegram WebApp
-function initTelegramApp() {
-    tg.ready();
-    tg.expand();
-    tg.enableClosingConfirmation();
-    tg.setHeaderColor('#1e293b');
-    tg.setBackgroundColor('#0f172a');
-    
-    // Настройка основной кнопки
-    tg.MainButton.setText("📈 Открыть в TradingView")
-        .show()
-        .onClick(() => {
-            tg.openLink(`https://www.tradingview.com/chart/?symbol=BINANCE:${currentSymbol}`);
-        });
-    
-    // Настройка задней кнопки
-    tg.BackButton.show();
-    tg.BackButton.onClick(() => {
-        tg.close();
-    });
-    
-    console.log('Telegram WebApp инициализирован');
-}
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+tg.setHeaderColor('#1e293b');
+tg.setBackgroundColor('#0f172a');
 
-// ============================================
-// КОНФИГУРАЦИЯ И ПЕРЕМЕННЫЕ
-// ============================================
+// Основные переменные
+let chart = null;
+let candleSeries = null;
+let volumeSeries = null;
+let trendLineSeries = null;
+let targetLines = [];
+let currentData = [];
+let ws = null;
+
+// Конфигурация
 const config = {
-    apiUrl: 'https://api.binance.com/api/v3',
-    wsUrl: 'wss://stream.binance.com:9443/ws',
-    defaultSymbol: 'BTCUSDT',
-    defaultTimeframe: '1h',
-    maxBars: 200
+    symbols: [
+        'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT',
+        'XRPUSDT', 'ADAUSDT', 'DOTUSDT', 'DOGEUSDT'
+    ],
+    timeframes: {
+        '5m': '5m',
+        '15m': '15m', 
+        '1h': '1h',
+        '4h': '4h',
+        '1d': '1d'
+    },
+    colors: {
+        up: '#22c55e',
+        down: '#ef4444',
+        trendLine: '#3b82f6',
+        target1: '#8b5cf6',
+        target2: '#ec4899',
+        target3: '#f59e0b',
+        target4: '#10b981',
+        stopLoss: '#ef4444'
+    }
 };
-
-let currentSymbol = config.defaultSymbol;
-let currentTimeframe = config.defaultTimeframe;
-let chartWidget = null;
-let chartData = [];
-let lastUpdateTime = 0;
-let wsConnection = null;
-let isChartReady = false;
 
 // Состояние индикатора
 let indicatorState = {
-    trend: null,
+    trend: null, // 'up', 'down', 'neutral'
     smaHigh: 0,
     smaLow: 0,
     atr: 0,
+    currentPrice: 0,
     targets: [],
-    signal: null,
-    lastSignalTime: null
+    lastSignal: null,
+    signalTime: null
 };
 
-// ============================================
-// ОСНОВНАЯ ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
-// ============================================
+// Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('Приложение загружается...');
+    console.log('Инициализация приложения...');
     
-    try {
-        // Инициализация Telegram
-        initTelegramApp();
-        
-        // Инициализация элементов управления
-        initializeControls();
-        
-        // Показать начальное состояние
-        showMessage('Приложение загружается...', 'info');
-        
-        // Загрузка библиотеки TradingView
-        await loadTradingViewLibrary();
-        
-        // Инициализация графика
-        await initializeChart();
-        
-        // Запуск WebSocket для реальных данных
-        startWebSocket();
-        
-        // Скрыть индикатор загрузки
-        hideLoading();
-        
-        showMessage('График готов к использованию!', 'success');
-        
-    } catch (error) {
-        console.error('Ошибка инициализации:', error);
-        showError(`Ошибка загрузки: ${error.message}`);
-    }
+    // Инициализация элементов управления
+    initControls();
+    
+    // Инициализация графика
+    initChart();
+    
+    // Загрузка начальных данных
+    await loadInitialData();
+    
+    // Расчет индикатора
+    calculateIndicator();
+    
+    // Запуск обновлений
+    startAutoUpdate();
+    
+    console.log('Приложение готово');
 });
 
-// ============================================
-// УПРАВЛЕНИЕ ЭЛЕМЕНТАМИ ИНТЕРФЕЙСА
-// ============================================
-function initializeControls() {
-    // Символы
-    document.getElementById('symbolSelect').addEventListener('change', (e) => {
-        currentSymbol = e.target.value;
-        const displaySymbol = `${currentSymbol.replace('USDT', '')}/USDT`;
-        document.getElementById('currentSymbol').textContent = displaySymbol;
-        
-        // Обновить график
-        updateChart();
-        
-        // Переподключить WebSocket
-        restartWebSocket();
-        
-        showMessage(`Символ изменен на ${displaySymbol}`, 'info');
+// Инициализация элементов управления
+function initControls() {
+    const symbolSelect = document.getElementById('symbol');
+    const timeframeSelect = document.getElementById('timeframe');
+    const updateBtn = document.getElementById('updateBtn');
+    const shareBtn = document.getElementById('shareBtn');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    
+    // Обновление графика
+    updateBtn.addEventListener('click', async () => {
+        await updateChart();
     });
-
-    // Таймфреймы
-    document.getElementById('timeframeSelect').addEventListener('change', (e) => {
-        currentTimeframe = e.target.value;
-        const tfText = document.getElementById('timeframeSelect').options[document.getElementById('timeframeSelect').selectedIndex].text;
-        document.getElementById('currentTF').textContent = tfText.split(' ')[0];
-        
-        updateChart();
-        showMessage(`Таймфрейм изменен на ${tfText}`, 'info');
-    });
-
-    // Кнопка обновления
-    document.getElementById('updateChartBtn').addEventListener('click', () => {
-        updateChart();
-        showMessage('График обновлен', 'success');
-    });
-
-    // Кнопка поделиться
-    document.getElementById('shareBtn').addEventListener('click', () => {
+    
+    // Поделиться сигналом
+    shareBtn.addEventListener('click', () => {
         shareSignal();
     });
-
-    // Кнопка полноэкранного режима
-    document.getElementById('fullscreenBtn').addEventListener('click', () => {
-        if (chartWidget) {
-            chartWidget.chart().takeScreenshot();
-        }
-    });
-
-    // Обновление настроек в реальном времени
-    ['trendLength', 'targetMultiplier', 'atrPeriod'].forEach(id => {
-        document.getElementById(id).addEventListener('input', debounce(() => {
-            if (isChartReady) {
-                calculateAndUpdateIndicator();
+    
+    // Полноэкранный режим
+    fullscreenBtn.addEventListener('click', () => {
+        if (chart) {
+            const container = document.getElementById('chart');
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(err => {
+                    console.error('Ошибка полноэкранного режима:', err);
+                });
+            } else {
+                document.exitFullscreen();
             }
-        }, 500));
-    });
-}
-
-// ============================================
-// ЗАГРУЗКА TRADINGVIEW БИБЛИОТЕКИ
-// ============================================
-async function loadTradingViewLibrary() {
-    return new Promise((resolve, reject) => {
-        if (window.TradingView) {
-            console.log('TradingView уже загружен');
-            resolve();
-            return;
         }
-
-        const script = document.createElement('script');
-        script.src = 'https://s3.tradingview.com/tv.js';
-        script.async = true;
-        
-        script.onload = () => {
-            console.log('TradingView библиотека загружена');
-            resolve();
-        };
-        
-        script.onerror = (error) => {
-            console.error('Ошибка загрузки TradingView:', error);
-            reject(new Error('Не удалось загрузить TradingView библиотеку'));
-        };
-        
-        document.head.appendChild(script);
     });
-}
-
-// ============================================
-// ИНИЦИАЛИЗАЦИЯ ГРАФИКА TRADINGVIEW
-// ============================================
-async function initializeChart() {
-    return new Promise((resolve) => {
-        const widgetOptions = {
-            symbol: `BINANCE:${currentSymbol}`,
-            interval: currentTimeframe,
-            container_id: 'tv_chart_container',
-            theme: 'dark',
-            style: '1',
-            locale: 'ru',
-            toolbar_bg: '#1e293b',
-            enable_publishing: false,
-            withdateranges: true,
-            hide_side_toolbar: false,
-            allow_symbol_change: true,
-            save_image: false,
-            details: true,
-            hotlist: true,
-            calendar: true,
-            studies: [
-                "MASimple@tv-basicstudies"
-            ],
-            timezone: 'Etc/UTC',
-            disabled_features: [
-                'use_localstorage_for_settings',
-                'left_toolbar',
-                'header_widget'
-            ],
-            enabled_features: [
-                'study_templates',
-                'side_toolbar_in_fullscreen_mode',
-                'header_symbol_search'
-            ],
-            overrides: {
-                "paneProperties.background": "#0f172a",
-                "paneProperties.vertGridProperties.color": "#1e293b",
-                "paneProperties.horzGridProperties.color": "#1e293b",
-                "symbolWatermarkProperties.transparency": 90,
-                "scalesProperties.textColor": "#94a3b8",
-                "mainSeriesProperties.candleStyle.upColor": "#10b981",
-                "mainSeriesProperties.candleStyle.downColor": "#ef4444",
-                "mainSeriesProperties.candleStyle.borderUpColor": "#10b981",
-                "mainSeriesProperties.candleStyle.borderDownColor": "#ef4444",
-                "mainSeriesProperties.candleStyle.wickUpColor": "#10b981",
-                "mainSeriesProperties.candleStyle.wickDownColor": "#ef4444"
-            },
-            custom_css_url: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap'
-        };
-
-        console.log('Инициализация TradingView виджета...');
-        
-        chartWidget = new TradingView.widget(widgetOptions);
-
-        chartWidget.onChartReady(() => {
-            console.log('График готов');
-            isChartReady = true;
-            
-            // Настройка графика
-            setupChart();
-            
-            // Загрузка исторических данных
-            loadHistoricalData().then(() => {
-                // Расчет индикатора
-                calculateAndUpdateIndicator();
-                
-                // Создание пользовательского индикатора
-                createCustomIndicator();
-                
-                resolve();
-            }).catch(error => {
-                console.error('Ошибка загрузки данных:', error);
-                showError('Не удалось загрузить исторические данные');
-                resolve();
-            });
+    
+    // Изменение символа
+    symbolSelect.addEventListener('change', async () => {
+        await updateChart();
+    });
+    
+    // Изменение таймфрейма
+    timeframeSelect.addEventListener('change', async () => {
+        await updateChart();
+    });
+    
+    // Изменение настроек индикатора
+    ['trendLength', 'targetMultiplier', 'atrPeriod', 'atrMultiplier'].forEach(id => {
+        document.getElementById(id).addEventListener('change', () => {
+            calculateIndicator();
         });
     });
 }
 
-// ============================================
-// НАСТРОЙКА ГРАФИКА
-// ============================================
-function setupChart() {
-    if (!chartWidget || !isChartReady) return;
-
-    try {
-        const chart = chartWidget.chart();
-        
-        // Настройка отображения
-        chart.setSymbol(`BINANCE:${currentSymbol}`, currentTimeframe, () => {
-            console.log('Символ установлен:', currentSymbol);
+// Инициализация графика
+function initChart() {
+    const chartContainer = document.getElementById('chart');
+    
+    // Создание графика
+    chart = LightweightCharts.createChart(chartContainer, {
+        width: chartContainer.clientWidth,
+        height: chartContainer.clientHeight,
+        layout: {
+            background: { color: '#0f172a' },
+            textColor: '#94a3b8',
+        },
+        grid: {
+            vertLines: { color: '#1e293b' },
+            horzLines: { color: '#1e293b' },
+        },
+        crosshair: {
+            mode: LightweightCharts.CrosshairMode.Normal,
+        },
+        rightPriceScale: {
+            borderColor: '#475569',
+        },
+        timeScale: {
+            borderColor: '#475569',
+            timeVisible: true,
+        },
+        handleScroll: {
+            mouseWheel: true,
+            pressedMouseMove: true,
+        },
+        handleScale: {
+            axisPressedMouseMove: true,
+            mouseWheel: true,
+            pinch: true,
+        },
+    });
+    
+    // Серия свечей
+    candleSeries = chart.addCandlestickSeries({
+        upColor: config.colors.up,
+        downColor: config.colors.down,
+        borderVisible: false,
+        wickUpColor: config.colors.up,
+        wickDownColor: config.colors.down,
+    });
+    
+    // Серия объема
+    volumeSeries = chart.addHistogramSeries({
+        color: '#26a69a',
+        priceFormat: {
+            type: 'volume',
+        },
+        priceScaleId: '',
+        scaleMargins: {
+            top: 0.8,
+            bottom: 0,
+        },
+    });
+    
+    // Серия для линий тренда
+    trendLineSeries = chart.addLineSeries({
+        color: config.colors.trendLine,
+        lineWidth: 2,
+        lineStyle: 2, // dashed
+    });
+    
+    // Адаптация к изменению размера окна
+    new ResizeObserver(() => {
+        chart.applyOptions({
+            width: chartContainer.clientWidth,
+            height: chartContainer.clientHeight,
         });
-        
-        // Подписка на события
-        chart.onIntervalChanged().subscribe(null, (interval) => {
-            currentTimeframe = interval;
-            updateTimeframeDisplay();
-            loadHistoricalData();
-        });
-        
-        chart.onSymbolChanged().subscribe(null, (symbol) => {
-            const newSymbol = symbol.split(':')[1];
-            if (newSymbol !== currentSymbol) {
-                currentSymbol = newSymbol;
-                updateSymbolDisplay();
-                loadHistoricalData();
-                restartWebSocket();
-            }
-        });
-        
-    } catch (error) {
-        console.error('Ошибка настройки графика:', error);
-    }
+    }).observe(chartContainer);
+    
+    // Скрытие загрузки
+    document.getElementById('loading').classList.add('hidden');
 }
 
-// ============================================
-// ЗАГРУЗКА ИСТОРИЧЕСКИХ ДАННЫХ
-// ============================================
-async function loadHistoricalData() {
+// Загрузка начальных данных
+async function loadInitialData() {
     try {
-        showLoading();
+        const symbol = document.getElementById('symbol').value;
+        const timeframe = document.getElementById('timeframe').value;
         
-        const timeframeToInterval = {
-            '1m': '1m', '5m': '5m', '15m': '15m', '30m': '30m',
-            '1h': '1h', '4h': '4h', '1d': '1d', '1w': '1w'
-        };
+        console.log(`Загрузка данных: ${symbol}, ${timeframe}`);
         
-        const interval = timeframeToInterval[currentTimeframe] || '1h';
-        const limit = config.maxBars;
+        // Получение данных с Binance
+        const data = await fetchKlines(symbol, timeframe, 200);
         
-        console.log(`Загрузка данных: ${currentSymbol}, ${interval}, ${limit} баров`);
-        
-        const response = await fetch(
-            `${config.apiUrl}/klines?symbol=${currentSymbol}&interval=${interval}&limit=${limit}`
-        );
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (!data || data.length === 0) {
+            throw new Error('Нет данных');
         }
         
-        const data = await response.json();
+        currentData = processKlineData(data);
         
-        chartData = data.map(item => ({
-            time: item[0] / 1000,
-            open: parseFloat(item[1]),
-            high: parseFloat(item[2]),
-            low: parseFloat(item[3]),
-            close: parseFloat(item[4]),
-            volume: parseFloat(item[5])
+        // Обновление графика
+        candleSeries.setData(currentData);
+        
+        // Обновление объема
+        const volumeData = currentData.map(d => ({
+            time: d.time,
+            value: d.volume,
+            color: d.close > d.open ? config.colors.up : config.colors.down,
         }));
+        volumeSeries.setData(volumeData);
         
-        console.log(`Загружено ${chartData.length} баров данных`);
-        
-        // Обновить индикатор
-        calculateAndUpdateIndicator();
+        // Обновление статуса
+        updateStatus(symbol, currentData[currentData.length - 1].close);
         
     } catch (error) {
-        console.error('Ошибка загрузки исторических данных:', error);
-        showError(`Ошибка загрузки данных: ${error.message}`);
-    } finally {
-        hideLoading();
+        console.error('Ошибка загрузки данных:', error);
+        showError('Не удалось загрузить данные');
     }
 }
 
-// ============================================
-// РАСЧЕТ ИНДИКАТОРА TREND_1H
-// ============================================
-function calculateAndUpdateIndicator() {
-    if (chartData.length < 50) {
-        console.warn('Недостаточно данных для расчета индикатора');
+// Загрузка свечей с Binance
+async function fetchKlines(symbol, interval, limit) {
+    const response = await fetch(
+        `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`
+    );
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+}
+
+// Обработка данных свечей
+function processKlineData(klineData) {
+    return klineData.map(k => ({
+        time: Math.floor(k[0] / 1000),
+        open: parseFloat(k[1]),
+        high: parseFloat(k[2]),
+        low: parseFloat(k[3]),
+        close: parseFloat(k[4]),
+        volume: parseFloat(k[5]),
+    }));
+}
+
+// Расчет индикатора Trend_1H
+function calculateIndicator() {
+    if (currentData.length < 50) {
+        console.warn('Недостаточно данных для расчета');
         return;
     }
-
+    
     try {
         // Получение параметров
         const trendLength = parseInt(document.getElementById('trendLength').value) || 10;
         const targetMultiplier = parseInt(document.getElementById('targetMultiplier').value) || 0;
         const atrPeriod = parseInt(document.getElementById('atrPeriod').value) || 20;
+        const atrMultiplier = parseFloat(document.getElementById('atrMultiplier').value) || 0.3;
         
         // Расчет ATR
-        const atr = calculateATR(chartData, atrPeriod);
-        const smoothedATR = atr * 0.3;
+        const atr = calculateATR(currentData, atrPeriod) * atrMultiplier;
         
         // Получение массивов цен
-        const highs = chartData.map(d => d.high);
-        const lows = chartData.map(d => d.low);
-        const closes = chartData.map(d => d.close);
+        const highs = currentData.map(d => d.high);
+        const lows = currentData.map(d => d.low);
+        const closes = currentData.map(d => d.close);
         
-        // Расчет SMA с учетом ATR
+        // Расчет SMA
         const smaHighArray = calculateSMA(highs, trendLength);
         const smaLowArray = calculateSMA(lows, trendLength);
         
-        const lastIndex = chartData.length - 1;
-        const smaHigh = smaHighArray[lastIndex] + smoothedATR;
-        const smaLow = smaLowArray[lastIndex] - smoothedATR;
+        const lastIndex = currentData.length - 1;
+        const smaHigh = smaHighArray[lastIndex] + atr;
+        const smaLow = smaLowArray[lastIndex] - atr;
         const lastClose = closes[lastIndex];
         
         // Определение тренда
@@ -383,51 +300,46 @@ function calculateAndUpdateIndicator() {
         
         if (lastClose > smaHigh) {
             trend = 'up';
-            if (!indicatorState.trend || indicatorState.trend === 'down') {
+            if (indicatorState.trend !== 'up') {
                 signal = 'UP';
             }
         } else if (lastClose < smaLow) {
             trend = 'down';
-            if (!indicatorState.trend || indicatorState.trend === 'up') {
+            if (indicatorState.trend !== 'down') {
                 signal = 'DOWN';
             }
         }
         
         // Расчет целей
-        const targets = calculateTargets(lastClose, smoothedATR, targetMultiplier, trend === 'up');
+        const targets = calculateTargets(lastClose, atr, targetMultiplier, trend === 'up');
         
         // Обновление состояния
         indicatorState = {
             trend,
             smaHigh,
             smaLow,
-            atr: smoothedATR,
+            atr,
+            currentPrice: lastClose,
             targets,
-            signal,
-            lastSignalTime: signal ? Date.now() : indicatorState.lastSignalTime
+            lastSignal: signal,
+            signalTime: signal ? new Date() : indicatorState.signalTime
         };
         
         // Обновление интерфейса
         updateIndicatorDisplay();
-        updateTargetsDisplay();
+        drawIndicatorOnChart();
         
-        // Отображение сигнала
+        // Показать сигнал
         if (signal) {
             showSignalAlert(signal, lastClose);
         }
         
-        // Отправка данных в Telegram
-        sendDataToTelegram();
-        
     } catch (error) {
         console.error('Ошибка расчета индикатора:', error);
-        showError(`Ошибка расчета: ${error.message}`);
     }
 }
 
-// ============================================
-// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ РАСЧЕТА
-// ============================================
+// Расчет SMA
 function calculateSMA(data, period) {
     const sma = [];
     for (let i = 0; i < data.length; i++) {
@@ -442,10 +354,10 @@ function calculateSMA(data, period) {
     return sma;
 }
 
+// Расчет ATR
 function calculateATR(data, period) {
-    if (data.length < period + 1) return 0;
-    
     const trValues = [];
+    
     for (let i = 1; i < data.length; i++) {
         const prev = data[i - 1];
         const curr = data[i];
@@ -458,15 +370,24 @@ function calculateATR(data, period) {
         trValues.push(tr);
     }
     
-    // Простое скользящее среднее для ATR
-    let atrSum = 0;
+    if (trValues.length < period) return 0;
+    
+    // Первое значение ATR - среднее TR за период
+    let atr = 0;
     for (let i = 0; i < period; i++) {
-        atrSum += trValues[i] || 0;
+        atr += trValues[i];
+    }
+    atr /= period;
+    
+    // Последующие значения ATR
+    for (let i = period; i < trValues.length; i++) {
+        atr = (atr * (period - 1) + trValues[i]) / period;
     }
     
-    return atrSum / period;
+    return atr;
 }
 
+// Расчет целей
 function calculateTargets(entryPrice, atr, multiplier, isUpTrend) {
     const sign = isUpTrend ? 1 : -1;
     const atrMultiplied = atr * (1 + multiplier * 0.1);
@@ -475,415 +396,290 @@ function calculateTargets(entryPrice, atr, multiplier, isUpTrend) {
         {
             name: "Стоп-лосс",
             value: entryPrice - atrMultiplied * 2 * sign,
-            type: "loss",
-            level: 0
+            type: "stop",
+            color: config.colors.stopLoss
         },
         {
             name: "Цель 1",
             value: entryPrice + atrMultiplied * (5 + multiplier) * sign,
-            type: "profit",
-            level: 1
+            type: "target",
+            color: config.colors.target1
         },
         {
             name: "Цель 2",
             value: entryPrice + atrMultiplied * (10 + multiplier * 2) * sign,
-            type: "profit",
-            level: 2
+            type: "target",
+            color: config.colors.target2
         },
         {
             name: "Цель 3",
             value: entryPrice + atrMultiplied * (15 + multiplier * 4) * sign,
-            type: "profit",
-            level: 3
+            type: "target",
+            color: config.colors.target3
         },
         {
             name: "Цель 4",
             value: entryPrice + atrMultiplied * (20 + multiplier * 6) * sign,
-            type: "profit",
-            level: 4
+            type: "target",
+            color: config.colors.target4
         }
     ];
 }
 
-// ============================================
-// ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
-// ============================================
-function updateIndicatorDisplay() {
-    const indicator = document.getElementById('trendIndicator');
-    const text = document.getElementById('trendText');
-    const atrValue = document.getElementById('atrValue');
+// Отрисовка индикатора на графике
+function drawIndicatorOnChart() {
+    // Очистка предыдущих линий
+    targetLines.forEach(line => {
+        chart.removeLineSeries(line);
+    });
+    targetLines = [];
     
-    // Обновление ATR
-    atrValue.textContent = indicatorState.atr.toFixed(4);
+    // Линия тренда
+    const trendLineData = currentData.map((d, i) => ({
+        time: d.time,
+        value: indicatorState.trend === 'up' ? indicatorState.smaLow : indicatorState.smaHigh
+    }));
+    trendLineSeries.setData(trendLineData);
     
-    // Обновление тренда
-    switch (indicatorState.trend) {
-        case 'up':
-            indicator.className = 'indicator-dot dot-up';
-            text.textContent = '📈 ВОСХОДЯЩИЙ';
-            text.style.color = '#22c55e';
-            break;
-        case 'down':
-            indicator.className = 'indicator-dot dot-down';
-            text.textContent = '📉 НИСХОДЯЩИЙ';
-            text.style.color = '#ef4444';
-            break;
-        default:
-            indicator.className = 'indicator-dot dot-neutral';
-            text.textContent = '➖ НЕЙТРАЛЬНЫЙ';
-            text.style.color = '#94a3b8';
-    }
+    // Линии целей
+    indicatorState.targets.forEach((target, index) => {
+        const lineSeries = chart.addLineSeries({
+            color: target.color,
+            lineWidth: 1,
+            lineStyle: target.type === 'stop' ? 1 : 2,
+            priceLineVisible: true,
+            lastValueVisible: true,
+        });
+        
+        const lineData = currentData.map(d => ({
+            time: d.time,
+            value: target.value
+        }));
+        
+        lineSeries.setData(lineData);
+        targetLines.push(lineSeries);
+    });
+    
+    // Область между линиями
+    drawTrendAreas();
 }
 
-function updateTargetsDisplay() {
-    const container = document.getElementById('targetsContainer');
-    const grid = document.getElementById('targetsGrid');
+// Отрисовка областей тренда
+function drawTrendAreas() {
+    // Здесь можно добавить логику для заливки областей между целями
+    // Для Lightweight Charts потребуется дополнительная реализация
+}
+
+// Обновление отображения индикатора
+function updateIndicatorDisplay() {
+    const trendStatus = document.getElementById('trendStatus');
+    const atrValue = document.getElementById('atrValue');
+    const priceValue = document.getElementById('priceValue');
+    const targetsGrid = document.getElementById('targetsGrid');
     
-    if (!indicatorState.targets || indicatorState.targets.length === 0) {
-        container.style.display = 'none';
-        return;
+    // Тренд
+    let trendText = '';
+    let trendClass = '';
+    
+    switch (indicatorState.trend) {
+        case 'up':
+            trendText = '📈 ВОСХОДЯЩИЙ';
+            trendClass = 'trend-up';
+            break;
+        case 'down':
+            trendText = '📉 НИСХОДЯЩИЙ';
+            trendClass = 'trend-down';
+            break;
+        default:
+            trendText = '➖ НЕЙТРАЛЬНЫЙ';
+            trendClass = 'trend-neutral';
     }
     
-    container.style.display = 'block';
-    grid.innerHTML = '';
+    trendStatus.textContent = trendText;
+    trendStatus.className = `status-value ${trendClass}`;
+    
+    // ATR
+    atrValue.textContent = indicatorState.atr.toFixed(4);
+    
+    // Цена
+    priceValue.textContent = indicatorState.currentPrice.toFixed(4);
+    
+    // Цели
+    targetsGrid.innerHTML = '';
     
     indicatorState.targets.forEach(target => {
-        const div = document.createElement('div');
-        div.className = 'target-item';
+        const targetItem = document.createElement('div');
+        targetItem.className = 'target-item';
+        targetItem.style.borderLeftColor = target.color;
         
-        const valueColor = target.type === 'profit' ? 'target-profit' : 'target-loss';
-        const prefix = target.type === 'profit' ? '🎯' : '🛑';
-        
-        div.innerHTML = `
-            <div class="target-label">${prefix} ${target.name}</div>
-            <div class="target-value ${valueColor}">${target.value.toFixed(4)}</div>
+        targetItem.innerHTML = `
+            <div class="target-name">${target.name}</div>
+            <div class="target-price" style="color: ${target.color}">
+                ${target.value.toFixed(4)}
+            </div>
         `;
         
-        grid.appendChild(div);
+        targetsGrid.appendChild(targetItem);
     });
 }
 
-function updateSymbolDisplay() {
-    const displaySymbol = `${currentSymbol.replace('USDT', '')}/USDT`;
-    document.getElementById('currentSymbol').textContent = displaySymbol;
-    document.getElementById('symbolSelect').value = currentSymbol;
+// Обновление статуса
+function updateStatus(symbol, price) {
+    const symbolStatus = document.getElementById('symbolStatus');
+    const displaySymbol = symbol.replace('USDT', '/USDT');
+    symbolStatus.textContent = displaySymbol;
+    
+    if (price) {
+        document.getElementById('priceValue').textContent = price.toFixed(4);
+    }
 }
 
-function updateTimeframeDisplay() {
-    const tfMap = {
-        '1': '1m', '5': '5m', '15': '15m', '60': '1h',
-        '240': '4h', 'D': '1d', 'W': '1w'
-    };
-    
-    const reverseMap = Object.fromEntries(
-        Object.entries(tfMap).map(([k, v]) => [v, k])
-    );
-    
-    const select = document.getElementById('timeframeSelect');
-    select.value = reverseMap[currentTimeframe] || '60';
-    
-    const tfText = select.options[select.selectedIndex].text;
-    document.getElementById('currentTF').textContent = tfText.split(' ')[0];
-}
-
-// ============================================
-// СОЗДАНИЕ КАСТОМНОГО ИНДИКАТОРА
-// ============================================
-function createCustomIndicator() {
-    if (!chartWidget || !isChartReady) return;
-    
+// Обновление графика
+async function updateChart() {
     try {
-        const chart = chartWidget.chart();
+        document.getElementById('loading').classList.remove('hidden');
         
-        // Создание пользовательского индикатора
-        chart.createStudy('Awesome Oscillator', false, false, {
-            'plot.color': '#3b82f6',
-            'plot.linewidth': 2
-        }, [
-            { resolution: currentTimeframe, symbol: `BINANCE:${currentSymbol}` }
-        ]);
+        await loadInitialData();
+        calculateIndicator();
         
-        // Добавление скользящих средних
-        const ma1 = chart.createStudy('Moving Average Exponential', false, false, {
-            'length': 9,
-            'color': '#22c55e',
-            'linewidth': 1
-        });
+        document.getElementById('loading').classList.add('hidden');
         
-        const ma2 = chart.createStudy('Moving Average Exponential', false, false, {
-            'length': 21,
-            'color': '#ef4444',
-            'linewidth': 1
-        });
-        
-        console.log('Пользовательские индикаторы созданы');
+        // Обновление статуса в Telegram
+        tg.HapticFeedback.impactOccurred('light');
         
     } catch (error) {
-        console.error('Ошибка создания индикатора:', error);
+        console.error('Ошибка обновления графика:', error);
+        document.getElementById('loading').classList.add('hidden');
+        showError('Ошибка обновления графика');
     }
 }
 
-// ============================================
-// WEBSOCKET ДЛЯ РЕАЛЬНОГО ВРЕМЕНИ
-// ============================================
-function startWebSocket() {
-    try {
-        if (wsConnection) {
-            wsConnection.close();
-        }
-        
-        const streamName = `${currentSymbol.toLowerCase()}@kline_${currentTimeframe}`;
-        const wsUrl = `${config.wsUrl}/${streamName}`;
-        
-        wsConnection = new WebSocket(wsUrl);
-        
-        wsConnection.onopen = () => {
-            console.log('WebSocket подключен:', streamName);
-        };
-        
-        wsConnection.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            
-            if (data.k) {
-                const kline = data.k;
-                const newCandle = {
-                    time: kline.t / 1000,
-                    open: parseFloat(kline.o),
-                    high: parseFloat(kline.h),
-                    low: parseFloat(kline.l),
-                    close: parseFloat(kline.c),
-                    volume: parseFloat(kline.v),
-                    isClosed: kline.x
-                };
-                
-                // Обновление данных
-                updateRealtimeData(newCandle);
-                
-                // Обновление индикатора если свеча закрылась
-                if (newCandle.isClosed) {
-                    calculateAndUpdateIndicator();
-                }
-            }
-        };
-        
-        wsConnection.onerror = (error) => {
-            console.error('WebSocket ошибка:', error);
-        };
-        
-        wsConnection.onclose = () => {
-            console.log('WebSocket отключен');
-            // Попытка переподключения через 5 секунд
-            setTimeout(() => {
-                if (isChartReady) {
-                    startWebSocket();
-                }
-            }, 5000);
-        };
-        
-    } catch (error) {
-        console.error('Ошибка WebSocket:', error);
-    }
-}
-
-function restartWebSocket() {
-    if (wsConnection) {
-        wsConnection.close();
-    }
-    setTimeout(startWebSocket, 1000);
-}
-
-function updateRealtimeData(newCandle) {
-    if (!chartData.length) return;
-    
-    const lastCandle = chartData[chartData.length - 1];
-    
-    if (newCandle.time === lastCandle.time) {
-        // Обновить текущую свечу
-        chartData[chartData.length - 1] = newCandle;
-    } else if (newCandle.time > lastCandle.time) {
-        // Добавить новую свечу
-        chartData.push(newCandle);
-        
-        // Ограничить количество баров
-        if (chartData.length > config.maxBars) {
-            chartData.shift();
-        }
-    }
-}
-
-// ============================================
-// УТИЛИТЫ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-// ============================================
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-function showLoading() {
-    const loading = document.getElementById('loadingIndicator');
-    if (loading) loading.style.display = 'block';
-}
-
-function hideLoading() {
-    const loading = document.getElementById('loadingIndicator');
-    if (loading) loading.style.display = 'none';
-}
-
-function showMessage(message, type = 'info') {
-    const container = document.getElementById('messageContainer');
-    if (!container) return;
-    
-    const messageDiv = document.createElement('div');
-    messageDiv.className = type === 'error' ? 'error-message' : 
-                          type === 'success' ? 'success-message' : 'info-message';
-    messageDiv.textContent = message;
-    
-    container.innerHTML = '';
-    container.appendChild(messageDiv);
-    
-    // Автоматическое скрытие
-    if (type !== 'error') {
-        setTimeout(() => {
-            if (messageDiv.parentNode === container) {
-                container.removeChild(messageDiv);
-            }
-        }, 3000);
-    }
-}
-
-function showError(message) {
-    showMessage(message, 'error');
-}
-
+// Показать сигнал
 function showSignalAlert(signal, price) {
-    const signalText = signal === 'UP' ? '📈 ПОКУПКА' : '📉 ПРОДАЖА';
-    const message = `${signalText} сигнал на ${currentSymbol} по цене ${price.toFixed(4)}`;
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `signal-alert ${signal === 'DOWN' ? 'down' : ''}`;
     
-    showMessage(message, 'success');
+    const symbol = document.getElementById('symbol').value;
+    const displaySymbol = symbol.replace('USDT', '/USDT');
+    
+    alertDiv.innerHTML = `
+        <strong>${signal === 'UP' ? '📈 ПОКУПКА' : '📉 ПРОДАЖА'}</strong>
+        <div style="font-size: 12px; margin-top: 5px;">
+            ${displaySymbol} по ${price.toFixed(4)}
+        </div>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Вибрация
+    if (tg && tg.HapticFeedback) {
+        tg.HapticFeedback.impactOccurred('medium');
+    }
+    
+    // Удалить через 5 секунд
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
     
     // Отправить уведомление в Telegram
     if (tg && tg.showAlert) {
-        tg.showAlert(message);
-    }
-    
-    // Вибрация на мобильных устройствах
-    if (navigator.vibrate) {
-        navigator.vibrate(200);
+        tg.showAlert(`${signal} сигнал на ${displaySymbol}`);
     }
 }
 
-// ============================================
-// ФУНКЦИИ ОБНОВЛЕНИЯ ГРАФИКА
-// ============================================
-function updateChart() {
-    if (!chartWidget || !isChartReady) return;
-    
-    showLoading();
-    
-    chartWidget.chart().setSymbol(`BINANCE:${currentSymbol}`, currentTimeframe, () => {
-        loadHistoricalData().then(() => {
-            calculateAndUpdateIndicator();
-            createCustomIndicator();
-        });
-    });
-}
-
-// ============================================
-// ИНТЕГРАЦИЯ С TELEGRAM
-// ============================================
+// Поделиться сигналом
 function shareSignal() {
     if (!indicatorState.trend) {
-        showMessage('Нет активного сигнала для отправки', 'error');
+        showMessage('Нет активного сигнала');
         return;
     }
     
-    const signalText = indicatorState.trend === 'up' ? '📈 ПОКУПКА' : '📉 ПРОДАЖА';
-    const lastClose = chartData[chartData.length - 1].close;
-    const targetsText = indicatorState.targets
-        .map(t => `${t.name}: ${t.value.toFixed(4)}`)
-        .join('\n');
+    const symbol = document.getElementById('symbol').value;
+    const displaySymbol = symbol.replace('USDT', '/USDT');
+    const signalText = indicatorState.trend === 'up' ? 'ПОКУПКА' : 'ПРОДАЖА';
     
     const message = `
-🎯 *TREND_1H СИГНАЛ* 🎯
+🎯 *Trend_1H Сигнал* 🎯
 
-*Символ:* ${currentSymbol}
-*Таймфрейм:* ${currentTimeframe}
+*Пара:* ${displaySymbol}
 *Сигнал:* ${signalText}
-*Цена:* ${lastClose.toFixed(4)}
+*Цена:* ${indicatorState.currentPrice.toFixed(4)}
+*Тренд:* ${indicatorState.trend === 'up' ? 'Восходящий' : 'Нисходящий'}
 
 *Цели:*
-${targetsText}
+${indicatorState.targets.map(t => `${t.name}: ${t.value.toFixed(4)}`).join('\n')}
 
-*Индикатор:* Trend_1H [☆GREAT ANNA☆]
-*Время:* ${new Date().toLocaleTimeString()}
-
-#Trading #Signal #${currentSymbol}
+📊 *Trend_1H [☆GREAT ANNA☆]*
     `.trim();
     
-    // Отправка через Telegram WebApp
+    // Отправка через Telegram
     tg.sendData(JSON.stringify({
-        action: 'share_signal',
-        symbol: currentSymbol,
+        type: 'signal',
+        symbol: symbol,
         signal: signalText,
-        price: lastClose,
+        price: indicatorState.currentPrice,
         trend: indicatorState.trend,
         targets: indicatorState.targets
     }));
     
-    // Показать уведомление
-    tg.showAlert('Сигнал отправлен в Telegram!');
-    
-    showMessage('Сигнал успешно отправлен!', 'success');
+    tg.showAlert('Сигнал отправлен!');
 }
 
-function sendDataToTelegram() {
-    if (!tg || !indicatorState.trend) return;
+// Показать сообщение
+function showMessage(text, type = 'info') {
+    if (tg && tg.showAlert) {
+        tg.showAlert(text);
+    } else {
+        alert(text);
+    }
+}
+
+// Показать ошибку
+function showError(text) {
+    showMessage(`Ошибка: ${text}`);
+}
+
+// Автоматическое обновление
+function startAutoUpdate() {
+    // Обновление каждые 30 секунд
+    setInterval(async () => {
+        if (document.visibilityState === 'visible') {
+            await updateChart();
+        }
+    }, 30000);
     
-    const data = {
-        action: 'indicator_update',
-        symbol: currentSymbol,
-        timeframe: currentTimeframe,
-        trend: indicatorState.trend,
-        price: chartData[chartData.length - 1].close,
-        atr: indicatorState.atr,
-        timestamp: Date.now()
+    // Обновление при возвращении на вкладку
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            updateChart();
+        }
+    });
+}
+
+// WebSocket для реального времени (опционально)
+function startWebSocket() {
+    const symbol = document.getElementById('symbol').value;
+    const wsUrl = `wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_1h`;
+    
+    ws = new WebSocket(wsUrl);
+    
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.k && data.k.x) { // Если свеча закрылась
+            updateChart();
+        }
     };
     
-    tg.sendData(JSON.stringify(data));
+    ws.onerror = (error) => {
+        console.error('WebSocket ошибка:', error);
+    };
 }
-
-// ============================================
-// ОБРАБОТЧИКИ ОШИБОК
-// ============================================
-window.addEventListener('error', (event) => {
-    console.error('Глобальная ошибка:', event.error);
-    showError(`Ошибка приложения: ${event.error.message}`);
-});
-
-window.addEventListener('unhandledrejection', (event) => {
-    console.error('Необработанное обещание:', event.reason);
-    showError(`Ошибка обещания: ${event.reason}`);
-});
 
 // Экспорт для отладки
 window.app = {
     updateChart,
-    calculateAndUpdateIndicator,
-    showMessage,
-    showError,
-    getState: () => ({
-        symbol: currentSymbol,
-        timeframe: currentTimeframe,
-        indicator: indicatorState,
-        dataLength: chartData.length
-    })
+    calculateIndicator,
+    getState: () => indicatorState
 };
-
-console.log('Приложение инициализировано');
