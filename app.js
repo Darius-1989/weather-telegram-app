@@ -37,7 +37,11 @@ let indicator = {
     isBullish: false,
     stopLossHit: false,
     signal_up: false,
-    signal_down: false
+    signal_down: false,
+    lastSymbol: '',
+    lastTimeframe: '',
+    sma_high: 0,
+    sma_low: 0
 };
 
 // Top 50 Binance Futures монет
@@ -113,7 +117,8 @@ function initChart() {
                 top: 0.05,
                 bottom: 0.05
             },
-            minimumWidth: 80
+            minimumWidth: 80,
+            autoScale: true
         },
         timeScale: {
             borderColor: '#333333',
@@ -156,6 +161,9 @@ function initChart() {
         }
     });
     
+    // Сбрасываем линии индикатора
+    resetPriceLines();
+    
     window.addEventListener('resize', () => {
         if (chart) {
             chart.applyOptions({
@@ -190,75 +198,127 @@ function initSymbols() {
 }
 
 // ============================================
-// PINE SCRIPT LOGIC
+// PINE SCRIPT LOGIC (ТОЧНО КАК В ORIGINAL)
 // ============================================
 
 function calculatePineIndicator() {
-    if (currentData.length < 30) return;
+    if (currentData.length < 30) {
+        console.log('Not enough data for indicator calculation');
+        return;
+    }
     
     const length = parseInt(document.getElementById('trendLength').value) || 10;
     const target = parseInt(document.getElementById('targetMultiplier').value) || 0;
-    const atrPeriod = 20;
+    const atrPeriod = parseInt(document.getElementById('atrPeriod').value) || 20;
     
-    // Calculate ATR
+    console.log('Calculating indicator with:', { length, target, atrPeriod });
+    
+    // Calculate ATR (ТОЧНО как в Pine Script)
     let atrSum = 0;
-    const startATR = Math.max(1, currentData.length - atrPeriod);
+    let atrCount = 0;
     
-    for (let i = startATR; i < currentData.length; i++) {
+    for (let i = 1; i < currentData.length && atrCount < atrPeriod; i++) {
         const high = currentData[i].high;
         const low = currentData[i].low;
         const prevClose = currentData[i-1].close;
+        
         const tr = Math.max(
             high - low,
             Math.abs(high - prevClose),
             Math.abs(low - prevClose)
         );
+        
         atrSum += tr;
+        atrCount++;
     }
     
-    const atr_value = (atrSum / (currentData.length - startATR)) * 0.3;
+    const atr_value = (atrSum / Math.max(1, atrCount)) * 0.3;
     
-    // Calculate SMA
+    // Calculate SMA (ТОЧНО как в Pine Script)
     let smaHighSum = 0;
     let smaLowSum = 0;
-    const startSMA = Math.max(0, currentData.length - length);
+    let smaCount = 0;
     
-    for (let i = startSMA; i < currentData.length; i++) {
+    const startIdx = Math.max(0, currentData.length - length);
+    for (let i = startIdx; i < currentData.length; i++) {
         smaHighSum += currentData[i].high;
         smaLowSum += currentData[i].low;
+        smaCount++;
     }
     
-    const sma_high = (smaHighSum / (currentData.length - startSMA)) + atr_value;
-    const sma_low = (smaLowSum / (currentData.length - startSMA)) - atr_value;
+    const sma_high = (smaHighSum / Math.max(1, smaCount)) + atr_value;
+    const sma_low = (smaLowSum / Math.max(1, smaCount)) - atr_value;
     
     const close = currentData[currentData.length - 1].close;
     const prevClose = currentData.length > 1 ? currentData[currentData.length - 2].close : close;
     
-    // Определяем тренд
+    console.log('SMA values:', { sma_high, sma_low, close, prevClose });
+    
+    // Определяем тренд (ТОЧНО как в Pine Script)
+    const symbolChanged = indicator.lastSymbol !== document.getElementById('symbol').value;
+    const timeframeChanged = indicator.lastTimeframe !== document.getElementById('timeframe').value;
+    
+    // При смене символа или таймфрейма сбрасываем все
+    if (symbolChanged || timeframeChanged) {
+        console.log('Symbol or timeframe changed, resetting indicator');
+        indicator = {
+            trend: 'neutral',
+            atr: 0,
+            price: 0,
+            entryPrice: 0,
+            stopLoss: 0,
+            tp1: 0,
+            tp2: 0,
+            tp3: 0,
+            tp4: 0,
+            isBullish: false,
+            stopLossHit: false,
+            signal_up: false,
+            signal_down: false,
+            lastSymbol: document.getElementById('symbol').value,
+            lastTimeframe: document.getElementById('timeframe').value,
+            sma_high: 0,
+            sma_low: 0
+        };
+    }
+    
+    // Сохраняем SMA для использования в проверках
+    indicator.sma_high = sma_high;
+    indicator.sma_low = sma_low;
+    
     let trend = indicator.isBullish;
     let signal_up = false;
     let signal_down = false;
+    let trendChanged = false;
     
-    // Crossover проверка
+    // Crossover проверка (цена пересекла sma_high сверху) - ТОЧНО как в Pine Script
     if (close > sma_high && prevClose <= sma_high) {
+        console.log('Crossover detected: close > sma_high');
         trend = true;
         signal_up = true;
         signal_down = false;
+        trendChanged = true;
         indicator.stopLossHit = false;
-        console.log('BUY SIGNAL triggered');
     }
     
-    // Crossunder проверка
+    // Crossunder проверка (цена пересекла sma_low снизу) - ТОЧНО как в Pine Script
     if (close < sma_low && prevClose >= sma_low) {
+        console.log('Crossunder detected: close < sma_low');
         trend = false;
         signal_up = false;
         signal_down = true;
+        trendChanged = true;
         indicator.stopLossHit = false;
-        console.log('SELL SIGNAL triggered');
     }
     
-    // Рассчитываем цели только при смене тренда или если они еще не установлены
-    if (signal_up || signal_down || indicator.entryPrice === 0) {
+    // Если нет сигнала, сохраняем предыдущий тренд
+    if (!signal_up && !signal_down) {
+        trend = indicator.isBullish;
+    }
+    
+    // Пересчитываем цели ТОЛЬКО при смене тренда (как в Pine Script)
+    if (trendChanged) {
+        console.log('Trend changed, calculating new targets');
         const base = trend ? sma_low : sma_high;
         const atr_multiplier = atr_value * (trend ? 1 : -1);
         
@@ -269,24 +329,65 @@ function calculatePineIndicator() {
         indicator.tp3 = close + atr_multiplier * (15 + target * 4);
         indicator.tp4 = close + atr_multiplier * (20 + target * 6);
         
-        console.log('Targets calculated:', {
+        console.log('New targets calculated:', {
             entry: indicator.entryPrice,
             stop: indicator.stopLoss,
             tp1: indicator.tp1,
             tp2: indicator.tp2,
             tp3: indicator.tp3,
-            tp4: indicator.tp4
+            tp4: indicator.tp4,
+            trend: trend ? 'UP' : 'DOWN'
         });
+    } else {
+        console.log('No trend change, keeping existing targets');
     }
     
-    // Проверка стоп лосса
-    if (!indicator.stopLossHit && indicator.stopLoss !== 0) {
+    // Проверка стоп лосса (ТОЛЬКО если есть активная позиция)
+    if (!indicator.stopLossHit && indicator.stopLoss !== 0 && indicator.entryPrice !== 0) {
         if ((trend && close <= indicator.stopLoss) || 
             (!trend && close >= indicator.stopLoss)) {
             indicator.stopLossHit = true;
             console.log('STOP LOSS HIT!');
         }
     }
+    
+    // Если нет активной позиции (цели не установлены), но цена показывает тренд
+    if (indicator.entryPrice === 0) {
+        // Определяем начальный тренд для первой установки целей
+        if (close > sma_high) {
+            trend = true;
+            signal_up = true;
+            const base = sma_low;
+            const atr_multiplier = atr_value;
+            
+            indicator.entryPrice = close;
+            indicator.stopLoss = base;
+            indicator.tp1 = close + atr_multiplier * (5 + target);
+            indicator.tp2 = close + atr_multiplier * (10 + target * 2);
+            indicator.tp3 = close + atr_multiplier * (15 + target * 4);
+            indicator.tp4 = close + atr_multiplier * (20 + target * 6);
+            
+            console.log('Initial UP trend detected, setting targets');
+        } else if (close < sma_low) {
+            trend = false;
+            signal_down = true;
+            const base = sma_high;
+            const atr_multiplier = -atr_value;
+            
+            indicator.entryPrice = close;
+            indicator.stopLoss = base;
+            indicator.tp1 = close + atr_multiplier * (5 + target);
+            indicator.tp2 = close + atr_multiplier * (10 + target * 2);
+            indicator.tp3 = close + atr_multiplier * (15 + target * 4);
+            indicator.tp4 = close + atr_multiplier * (20 + target * 6);
+            
+            console.log('Initial DOWN trend detected, setting targets');
+        }
+    }
+    
+    // Сохраняем текущие настройки
+    indicator.lastSymbol = document.getElementById('symbol').value;
+    indicator.lastTimeframe = document.getElementById('timeframe').value;
     
     // Форматируем числа
     const symbol = document.getElementById('symbol').value;
@@ -308,82 +409,112 @@ function calculatePineIndicator() {
 // ============================================
 
 function drawIndicatorLines() {
-    if (!chart || !candleSeries || indicator.entryPrice === 0) return;
+    if (!chart || !candleSeries) {
+        console.log('Chart or candle series not available');
+        return;
+    }
     
     console.log('Drawing indicator lines...');
     
     // Удаляем старые линии
-    Object.values(priceLines).forEach(line => {
-        if (line) {
-            candleSeries.removePriceLine(line);
-        }
-    });
+    resetPriceLines();
+    
+    if (indicator.entryPrice === 0 || isNaN(indicator.entryPrice)) {
+        console.log('No entry price available, skipping line drawing');
+        return;
+    }
     
     const color = indicator.stopLossHit ? '#ff0000' : null;
     
     // Создаем новые линии
-    priceLines.stopLoss = candleSeries.createPriceLine({
-        price: indicator.stopLoss,
-        color: color || '#ff0000',
-        lineWidth: 2,
-        lineStyle: 2,
-        axisLabelVisible: true,
-        title: 'STOP'
+    try {
+        priceLines.stopLoss = candleSeries.createPriceLine({
+            price: indicator.stopLoss,
+            color: color || '#ff0000',
+            lineWidth: 2,
+            lineStyle: 2,
+            axisLabelVisible: true,
+            title: 'STOP'
+        });
+        
+        priceLines.entry = candleSeries.createPriceLine({
+            price: indicator.entryPrice,
+            color: color || '#0066cc',
+            lineWidth: 2,
+            lineStyle: 0,
+            axisLabelVisible: true,
+            title: 'ENTRY'
+        });
+        
+        priceLines.tp1 = candleSeries.createPriceLine({
+            price: indicator.tp1,
+            color: color || '#00ff00',
+            lineWidth: 1,
+            lineStyle: 2,
+            axisLabelVisible: true,
+            title: 'TP1'
+        });
+        
+        priceLines.tp2 = candleSeries.createPriceLine({
+            price: indicator.tp2,
+            color: color || '#00ff00',
+            lineWidth: 1,
+            lineStyle: 2,
+            axisLabelVisible: true,
+            title: 'TP2'
+        });
+        
+        priceLines.tp3 = candleSeries.createPriceLine({
+            price: indicator.tp3,
+            color: color || '#00ff00',
+            lineWidth: 1,
+            lineStyle: 2,
+            axisLabelVisible: true,
+            title: 'TP3'
+        });
+        
+        priceLines.tp4 = candleSeries.createPriceLine({
+            price: indicator.tp4,
+            color: color || '#00ff00',
+            lineWidth: 1,
+            lineStyle: 2,
+            axisLabelVisible: true,
+            title: 'TP4'
+        });
+        
+        console.log('Lines drawn successfully');
+        
+    } catch (error) {
+        console.error('Error drawing lines:', error);
+    }
+}
+
+function resetPriceLines() {
+    Object.values(priceLines).forEach(line => {
+        if (line) {
+            try {
+                candleSeries.removePriceLine(line);
+            } catch (e) {
+                // Игнорируем ошибки удаления
+            }
+        }
     });
     
-    priceLines.entry = candleSeries.createPriceLine({
-        price: indicator.entryPrice,
-        color: color || '#0066cc',
-        lineWidth: 2,
-        lineStyle: 0,
-        axisLabelVisible: true,
-        title: 'ENTRY'
-    });
-    
-    priceLines.tp1 = candleSeries.createPriceLine({
-        price: indicator.tp1,
-        color: color || '#00ff00',
-        lineWidth: 1,
-        lineStyle: 2,
-        axisLabelVisible: true,
-        title: 'TP1'
-    });
-    
-    priceLines.tp2 = candleSeries.createPriceLine({
-        price: indicator.tp2,
-        color: color || '#00ff00',
-        lineWidth: 1,
-        lineStyle: 2,
-        axisLabelVisible: true,
-        title: 'TP2'
-    });
-    
-    priceLines.tp3 = candleSeries.createPriceLine({
-        price: indicator.tp3,
-        color: color || '#00ff00',
-        lineWidth: 1,
-        lineStyle: 2,
-        axisLabelVisible: true,
-        title: 'TP3'
-    });
-    
-    priceLines.tp4 = candleSeries.createPriceLine({
-        price: indicator.tp4,
-        color: color || '#00ff00',
-        lineWidth: 1,
-        lineStyle: 2,
-        axisLabelVisible: true,
-        title: 'TP4'
-    });
-    
-    console.log('Lines drawn successfully');
+    priceLines = {
+        stopLoss: null,
+        entry: null,
+        tp1: null,
+        tp2: null,
+        tp3: null,
+        tp4: null
+    };
 }
 
 // ============================================
 // DATA LOADING
 // ============================================
 
-async function loadData() {
+async function loadData(resetIndicator = false) {
     if (isLoading) return;
     
     try {
@@ -393,16 +524,8 @@ async function loadData() {
         const symbol = document.getElementById('symbol').value;
         const timeframe = document.getElementById('timeframe').value;
         
-        // Переинициализируем график с новой точностью
-        if (chart) {
-            const chartContainer = document.getElementById('chart');
-            chartContainer.innerHTML = '';
-            chart = null;
-        }
-        
-        initChart();
-        
         console.log(`Loading ${symbol} ${timeframe}...`);
+        
         const data = await getChartData(symbol, timeframe);
         
         if (!data || data.length === 0) {
@@ -410,6 +533,11 @@ async function loadData() {
         }
         
         currentData = formatData(data);
+        
+        // Переинициализируем график если нужно
+        if (!chart) {
+            initChart();
+        }
         
         // Обновляем данные на графике
         if (candleSeries) {
@@ -440,7 +568,15 @@ async function loadData() {
 
 async function getChartData(symbol, interval, limit = 100) {
     try {
-        const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+        // Для разных таймфреймов разное количество данных
+        let limitCount = 100;
+        if (interval === '1m' || interval === '5m') {
+            limitCount = 200;
+        } else if (interval === '1h' || interval === '4h') {
+            limitCount = 100;
+        }
+        
+        const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limitCount}`;
         const response = await fetch(url);
         
         if (!response.ok) throw new Error(`API error: ${response.status}`);
@@ -467,8 +603,16 @@ function autoZoomToLatest() {
     if (!chart || currentData.length < 10) return;
     
     try {
-        // Показываем последние 50 свечей
-        const visibleBars = 50;
+        // Показываем последние свечи в зависимости от таймфрейма
+        const timeframe = document.getElementById('timeframe').value;
+        let visibleBars = 50;
+        
+        if (timeframe === '1m') visibleBars = 100;
+        if (timeframe === '5m') visibleBars = 80;
+        if (timeframe === '15m') visibleBars = 60;
+        if (timeframe === '1h') visibleBars = 50;
+        if (timeframe === '4h') visibleBars = 30;
+        
         const lastBarIndex = currentData.length - 1;
         const firstVisibleIndex = Math.max(0, lastBarIndex - visibleBars);
         
@@ -483,23 +627,7 @@ function autoZoomToLatest() {
             to: lastTime + padding
         });
         
-        // Также подгоняем масштаб по вертикали
-        const visibleData = currentData.slice(firstVisibleIndex);
-        let maxPrice = Math.max(...visibleData.map(d => d.high), indicator.tp4 || 0);
-        let minPrice = Math.min(...visibleData.map(d => d.low), indicator.stopLoss || 0);
-        
-        // Добавляем отступ сверху и снизу
-        const priceRange = maxPrice - minPrice;
-        const paddingPercent = 0.1;
-        
-        maxPrice += priceRange * paddingPercent;
-        minPrice -= priceRange * paddingPercent;
-        
-        // Устанавливаем видимый диапазон цен
-        chart.priceScale('right').applyOptions({
-            autoScale: false
-        });
-        
+        // Даем графику время на обновление
         setTimeout(() => {
             chart.timeScale().fitContent();
         }, 100);
@@ -515,24 +643,24 @@ function autoZoomToLatest() {
 // ============================================
 
 function updateUI() {
-    // Форматируем цены до 4 знаков после запятой
+    // Форматируем цены
     const formatPrice = (price) => {
-        if (!price || isNaN(price)) return '0.0000';
+        if (!price || isNaN(price) || price === 0) return '0.0000';
         
         const symbol = document.getElementById('symbol').value;
         const precision = getPricePrecision(symbol);
         
         // Для очень маленьких цен показываем больше знаков
         if (price < 0.0001) {
-            return price.toFixed(8);
-        } else if (price < 0.01) {
             return price.toFixed(6);
-        } else if (price < 1) {
+        } else if (price < 0.01) {
             return price.toFixed(5);
-        } else if (price < 10) {
+        } else if (price < 1) {
             return price.toFixed(4);
-        } else if (price < 100) {
+        } else if (price < 10) {
             return price.toFixed(3);
+        } else if (price < 100) {
+            return price.toFixed(2);
         } else if (price < 1000) {
             return price.toFixed(2);
         } else {
@@ -612,18 +740,36 @@ function loadTestData() {
     console.log('Loading test data...');
     
     const symbol = document.getElementById('symbol').value;
+    const timeframe = document.getElementById('timeframe').value;
     
-    // Переинициализируем график
-    if (chart) {
-        const chartContainer = document.getElementById('chart');
-        chartContainer.innerHTML = '';
-        chart = null;
+    // Сбрасываем индикатор при смене символа/таймфрейма
+    indicator = {
+        trend: 'neutral',
+        atr: 0,
+        price: 0,
+        entryPrice: 0,
+        stopLoss: 0,
+        tp1: 0,
+        tp2: 0,
+        tp3: 0,
+        tp4: 0,
+        isBullish: false,
+        stopLossHit: false,
+        signal_up: false,
+        signal_down: false,
+        lastSymbol: symbol,
+        lastTimeframe: timeframe,
+        sma_high: 0,
+        sma_low: 0
+    };
+    
+    // Переинициализируем график если нужно
+    if (!chart) {
+        initChart();
     }
     
-    initChart();
-    
     // Генерируем тестовые данные
-    const data = generateTestData(symbol);
+    const data = generateTestData(symbol, timeframe);
     currentData = formatData(data);
     
     // Обновляем график
@@ -646,14 +792,24 @@ function loadTestData() {
     hideLoading();
 }
 
-function generateTestData(symbol) {
+function generateTestData(symbol, timeframe) {
     const data = [];
     const basePrice = getTestPrice(symbol);
     let price = basePrice;
     let trend = Math.random() > 0.5;
     
-    for (let i = 0; i < 100; i++) {
-        const time = Date.now() - (99 - i) * 60000;
+    // Определяем интервал в миллисекундах
+    let intervalMs = 60000; // 1 minute по умолчанию
+    if (timeframe === '5m') intervalMs = 300000;
+    if (timeframe === '15m') intervalMs = 900000;
+    if (timeframe === '30m') intervalMs = 1800000;
+    if (timeframe === '1h') intervalMs = 3600000;
+    if (timeframe === '4h') intervalMs = 14400000;
+    
+    const barsCount = timeframe === '1m' ? 200 : 100;
+    
+    for (let i = 0; i < barsCount; i++) {
+        const time = Date.now() - (barsCount - 1 - i) * intervalMs;
         
         const trendStrength = trend ? 0.003 : -0.003;
         const noise = (Math.random() - 0.5) * 0.01;
@@ -664,8 +820,8 @@ function generateTestData(symbol) {
         const high = Math.max(open, close) * (1 + Math.random() * 0.005);
         const low = Math.min(open, close) * (1 - Math.random() * 0.005);
         
-        // Периодически меняем тренд
-        if (i % 30 === 0) trend = !trend;
+        // Периодически меняем тренд для тестовых сигналов
+        if (i % 25 === 0) trend = !trend;
         
         data.push([
             time,
@@ -718,11 +874,6 @@ function toggleFullscreen() {
 
 function resetStopLoss() {
     indicator.stopLossHit = false;
-    indicator.signal_up = false;
-    indicator.signal_down = false;
-    
-    // Пересчитываем индикаторы
-    calculatePineIndicator();
     
     // Перерисовываем линии
     drawIndicatorLines();
@@ -760,11 +911,11 @@ Time: ${new Date().toLocaleString()}
 // ============================================
 
 function setupEventListeners() {
-    document.getElementById('updateBtn').addEventListener('click', loadData);
+    document.getElementById('updateBtn').addEventListener('click', () => loadData());
     
-    document.getElementById('symbol').addEventListener('change', loadData);
+    document.getElementById('symbol').addEventListener('change', () => loadData());
     
-    document.getElementById('timeframe').addEventListener('change', loadData);
+    document.getElementById('timeframe').addEventListener('change', () => loadData());
     
     ['trendLength', 'targetMultiplier', 'atrPeriod'].forEach(id => {
         document.getElementById(id).addEventListener('change', () => {
@@ -794,8 +945,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Настройка событий
     setupEventListeners();
     
+    // Инициализируем график
+    initChart();
+    
     // Загружаем данные
-    setTimeout(loadData, 100);
+    setTimeout(() => loadData(), 100);
     
     // Автообновление
     setInterval(() => {
