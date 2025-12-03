@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+
+          <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -269,16 +270,6 @@
         .hidden {
             display: none;
         }
-        
-        .stop-hit {
-            background: rgba(255, 0, 0, 0.1) !important;
-            border-color: #ff0000 !important;
-        }
-        
-        .stop-hit .target-name,
-        .stop-hit .target-value {
-            color: #ff0000 !important;
-        }
     </style>
 </head>
 <body>
@@ -291,7 +282,11 @@
         <div class="controls">
             <div class="symbol-row">
                 <select id="symbol">
-                    <!-- Populated by JavaScript -->
+                    <option value="BTCUSDT">BTC/USDT</option>
+                    <option value="ETHUSDT">ETH/USDT</option>
+                    <option value="BNBUSDT">BNB/USDT</option>
+                    <option value="SOLUSDT">SOL/USDT</option>
+                    <option value="XRPUSDT">XRP/USDT</option>
                 </select>
                 <select id="timeframe">
                     <option value="1m">1 Min</option>
@@ -368,4 +363,3 @@
     <script src="app.js"></script>
 </body>
 </html>
-
