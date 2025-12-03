@@ -42,7 +42,13 @@ let indicator = {
     lastTimeframe: '',
     sma_high: 0,
     sma_low: 0,
-    hasInitialSignal: false
+    hasInitialSignal: false,
+    // Сохраняем последние настройки для сравнения
+    lastSettings: {
+        trendLength: 10,
+        targetMultiplier: 0,
+        atrPeriod: 20
+    }
 };
 
 // Top 50 Binance Futures монет
@@ -58,20 +64,6 @@ const BINANCE_TOP_50 = [
     'IMXUSDT', 'GALAUSDT', 'CRVUSDT', 'KAVAUSDT', 'RUNEUSDT',
     '1INCHUSDT', 'COMPUSDT', 'ZILUSDT', 'IOTAUSDT', 'ENJUSDT'
 ];
-
-// Определяем точность для разных монет
-const PRICE_PRECISION = {
-    'BTCUSDT': 2,
-    'ETHUSDT': 2,
-    'BNBUSDT': 2,
-    'SOLUSDT': 3,
-    'XRPUSDT': 4,
-    'ADAUSDT': 4,
-    'DOGEUSDT': 5,
-    'SHIBUSDT': 8,
-    // Остальные монеты по умолчанию
-    'default': 4
-};
 
 // ============================================
 // CHART INITIALIZATION
@@ -174,10 +166,6 @@ function initChart() {
     return true;
 }
 
-function getPricePrecision(symbol) {
-    return PRICE_PRECISION[symbol] || PRICE_PRECISION.default;
-}
-
 // ============================================
 // TOP 50 MONETS INIT
 // ============================================
@@ -195,10 +183,10 @@ function initSymbols() {
 }
 
 // ============================================
-// PINE SCRIPT LOGIC (СТАБИЛЬНАЯ ВЕРСИЯ)
+// PINE SCRIPT LOGIC (С РЕАКЦИЕЙ НА НАСТРОЙКИ)
 // ============================================
 
-function calculatePineIndicator() {
+function calculatePineIndicator(forceRecalculate = false) {
     if (currentData.length < 30) {
         console.log('Not enough data for indicator calculation');
         return;
@@ -208,7 +196,19 @@ function calculatePineIndicator() {
     const target = parseInt(document.getElementById('targetMultiplier').value) || 0;
     const atrPeriod = parseInt(document.getElementById('atrPeriod').value) || 20;
     
-    console.log('Calculating indicator with:', { length, target, atrPeriod });
+    // Проверяем, изменились ли настройки
+    const settingsChanged = 
+        length !== indicator.lastSettings.trendLength ||
+        target !== indicator.lastSettings.targetMultiplier ||
+        atrPeriod !== indicator.lastSettings.atrPeriod;
+    
+    console.log('Calculating indicator with:', { 
+        length, 
+        target, 
+        atrPeriod,
+        settingsChanged,
+        forceRecalculate
+    });
     
     // Calculate ATR
     let atrSum = 0;
@@ -254,8 +254,8 @@ function calculatePineIndicator() {
     const symbolChanged = indicator.lastSymbol !== currentSymbol;
     const timeframeChanged = indicator.lastTimeframe !== currentTimeframe;
     
-    if (symbolChanged || timeframeChanged) {
-        console.log('Symbol or timeframe changed, resetting indicator');
+    if (symbolChanged || timeframeChanged || forceRecalculate) {
+        console.log('Symbol/timeframe changed or force recalculate, resetting indicator');
         // Полный сброс при смене
         indicator = {
             trend: 'neutral',
@@ -275,7 +275,12 @@ function calculatePineIndicator() {
             lastTimeframe: currentTimeframe,
             sma_high: 0,
             sma_low: 0,
-            hasInitialSignal: false
+            hasInitialSignal: false,
+            lastSettings: {
+                trendLength: length,
+                targetMultiplier: target,
+                atrPeriod: atrPeriod
+            }
         };
         
         // Сбрасываем линии
@@ -296,14 +301,14 @@ function calculatePineIndicator() {
     // Если цена ниже SMA LOW - медвежий тренд
     
     if (close > sma_high) {
-        if (!indicator.hasInitialSignal || !trend) {
+        if (!indicator.hasInitialSignal || !trend || settingsChanged) {
             trend = true;
             signal_up = true;
             trendChanged = true;
             console.log('UP trend signal');
         }
     } else if (close < sma_low) {
-        if (!indicator.hasInitialSignal || trend) {
+        if (!indicator.hasInitialSignal || trend || settingsChanged) {
             trend = false;
             signal_down = true;
             trendChanged = true;
@@ -311,9 +316,16 @@ function calculatePineIndicator() {
         }
     }
     
-    // Пересчитываем цели при смене тренда или если их еще нет
-    if (trendChanged || indicator.entryPrice === 0) {
-        console.log('Calculating new targets');
+    // Пересчитываем цели при:
+    // 1. Смене тренда
+    // 2. Если целей еще нет
+    // 3. Если изменились настройки (важно!)
+    if (trendChanged || indicator.entryPrice === 0 || settingsChanged) {
+        console.log('Calculating new targets (reason:', {
+            trendChanged,
+            noEntry: indicator.entryPrice === 0,
+            settingsChanged
+        }, ')');
         
         const base = trend ? sma_low : sma_high;
         const atr_multiplier = atr_value * (trend ? 1 : -1);
@@ -326,7 +338,7 @@ function calculatePineIndicator() {
         indicator.tp4 = close + atr_multiplier * (20 + target * 6);
         indicator.hasInitialSignal = true;
         
-        console.log('Targets:', {
+        console.log('New targets calculated:', {
             entry: indicator.entryPrice,
             stop: indicator.stopLoss,
             tp1: indicator.tp1,
@@ -354,6 +366,11 @@ function calculatePineIndicator() {
     // Сохраняем последние настройки
     indicator.lastSymbol = currentSymbol;
     indicator.lastTimeframe = currentTimeframe;
+    indicator.lastSettings = {
+        trendLength: length,
+        targetMultiplier: target,
+        atrPeriod: atrPeriod
+    };
 }
 
 // ============================================
@@ -467,7 +484,7 @@ function resetPriceLines() {
 }
 
 // ============================================
-// DATA LOADING (НАДЕЖНАЯ ВЕРСИЯ)
+// DATA LOADING
 // ============================================
 
 async function loadData() {
@@ -523,7 +540,6 @@ async function loadData() {
         
     } catch (error) {
         console.error('Error loading data:', error);
-        alert(`Ошибка загрузки: ${error.message}. Используем тестовые данные.`);
         loadTestData();
     } finally {
         isLoading = false;
@@ -703,7 +719,40 @@ function updateUI() {
 }
 
 // ============================================
-// TEST DATA (НАДЕЖНАЯ ВЕРСИЯ)
+// UPDATE INDICATOR SETTINGS (ВАЖНАЯ ФУНКЦИЯ)
+// ============================================
+
+function updateIndicatorSettings() {
+    console.log('Updating indicator settings...');
+    
+    if (currentData.length < 20) {
+        console.log('Not enough data to update settings');
+        alert('Недостаточно данных для обновления настроек. Загрузите данные сначала.');
+        return;
+    }
+    
+    // Получаем текущие настройки
+    const length = parseInt(document.getElementById('trendLength').value) || 10;
+    const target = parseInt(document.getElementById('targetMultiplier').value) || 0;
+    const atrPeriod = parseInt(document.getElementById('atrPeriod').value) || 20;
+    
+    console.log('New settings:', { length, target, atrPeriod });
+    
+    // Пересчитываем индикатор с новыми настройками
+    calculatePineIndicator(true); // forceRecalculate = true
+    
+    // Перерисовываем линии
+    drawIndicatorLines();
+    
+    // Обновляем UI
+    updateUI();
+    
+    // Показываем подтверждение
+    alert(`Настройки обновлены!\n\nTrend Length: ${length}\nTarget Multiplier: ${target}\nATR Period: ${atrPeriod}`);
+}
+
+// ============================================
+// TEST DATA (FALLBACK)
 // ============================================
 
 function loadTestData() {
@@ -743,7 +792,12 @@ function loadTestData() {
         lastTimeframe: timeframe,
         sma_high: 0,
         sma_low: 0,
-        hasInitialSignal: false
+        hasInitialSignal: false,
+        lastSettings: {
+            trendLength: 10,
+            targetMultiplier: 0,
+            atrPeriod: 20
+        }
     };
     
     // Рассчитываем индикаторы
@@ -870,7 +924,12 @@ function resetAll() {
         lastTimeframe: timeframe,
         sma_high: 0,
         sma_low: 0,
-        hasInitialSignal: false
+        hasInitialSignal: false,
+        lastSettings: {
+            trendLength: 10,
+            targetMultiplier: 0,
+            atrPeriod: 20
+        }
     };
     
     // Сбрасываем линии
@@ -878,7 +937,7 @@ function resetAll() {
     
     // Пересчитываем с текущими данными
     if (currentData.length > 0) {
-        calculatePineIndicator();
+        calculatePineIndicator(true);
         drawIndicatorLines();
         updateUI();
     }
@@ -909,7 +968,7 @@ Time: ${new Date().toLocaleString()}
 }
 
 // ============================================
-// EVENT HANDLERS
+// EVENT HANDLERS (С ИСПРАВЛЕННОЙ РЕАКЦИЕЙ НА НАСТРОЙКИ)
 // ============================================
 
 function setupEventListeners() {
@@ -922,16 +981,27 @@ function setupEventListeners() {
     // Смена таймфрейма
     document.getElementById('timeframe').addEventListener('change', loadData);
     
-    // Изменение настроек индикатора
+    // Изменение настроек индикатора - ТЕПЕРЬ РЕАГИРУЕТ!
     ['trendLength', 'targetMultiplier', 'atrPeriod'].forEach(id => {
-        document.getElementById(id).addEventListener('change', function() {
-            console.log(`Setting changed: ${id} = ${this.value}`);
-            
-            if (currentData.length > 20) {
-                calculatePineIndicator();
-                drawIndicatorLines();
-                updateUI();
-                alert(`Настройка "${id}" изменена!`);
+        const element = document.getElementById(id);
+        
+        // Добавляем обработчик для изменения (отпускание клавиши/мыши)
+        element.addEventListener('change', function() {
+            console.log(`Setting changed via change event: ${id} = ${this.value}`);
+            updateIndicatorSettings();
+        });
+        
+        // Также реагируем на input (при вводе с клавиатуры)
+        element.addEventListener('input', function() {
+            console.log(`Setting input: ${id} = ${this.value}`);
+            // Можно добавить debounce если нужно
+        });
+        
+        // Добавляем кнопку Enter для быстрого применения
+        element.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                console.log(`Enter pressed for: ${id}`);
+                updateIndicatorSettings();
             }
         });
     });
@@ -944,6 +1014,17 @@ function setupEventListeners() {
     
     // Кнопка полноэкранного режима
     document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+    
+    // Добавляем отдельную кнопку для применения настроек
+    const applySettingsBtn = document.createElement('button');
+    applySettingsBtn.className = 'btn';
+    applySettingsBtn.innerHTML = '⚙️ APPLY';
+    applySettingsBtn.style.marginTop = '10px';
+    applySettingsBtn.addEventListener('click', updateIndicatorSettings);
+    
+    // Вставляем кнопку после настроек
+    const controlsDiv = document.querySelector('.controls');
+    controlsDiv.appendChild(applySettingsBtn);
 }
 
 // ============================================
