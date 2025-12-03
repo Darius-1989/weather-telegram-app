@@ -20,66 +20,84 @@
         }
         
         .container {
-            padding: 15px;
+            padding: 10px;
             background: #000000;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
         
         .header {
             text-align: center;
-            padding: 15px;
-            margin-bottom: 15px;
+            padding: 12px;
+            margin-bottom: 10px;
             background: #111111;
-            border-radius: 10px;
+            border-radius: 8px;
             border: 1px solid #333333;
         }
         
         .header h1 {
-            font-size: 18px;
+            font-size: 16px;
             color: #ffffff;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
         
         .header p {
-            font-size: 12px;
+            font-size: 11px;
             color: #cccccc;
         }
         
         .controls {
             background: #111111;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid #333333;
-        }
-        
-        .control-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .control-group {
-            flex: 1;
-            min-width: 120px;
-        }
-        
-        .control-group label {
-            display: block;
-            font-size: 11px;
-            color: #cccccc;
-            margin-bottom: 5px;
-        }
-        
-        select, input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #333333;
             border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #333333;
+        }
+        
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .setting-group label {
+            font-size: 10px;
+            color: #cccccc;
+            margin-bottom: 4px;
+            white-space: nowrap;
+        }
+        
+        .setting-group input {
+            padding: 8px;
+            border: 1px solid #333333;
+            border-radius: 6px;
             background: #000000;
             color: #ffffff;
-            font-size: 14px;
+            font-size: 12px;
+            outline: none;
+        }
+        
+        .symbol-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        select {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #333333;
+            border-radius: 6px;
+            background: #000000;
+            color: #ffffff;
+            font-size: 12px;
             outline: none;
         }
         
@@ -87,27 +105,22 @@
             background: #2d2d2d;
             color: #ffffff;
             border: 1px solid #444444;
-            padding: 12px;
-            border-radius: 8px;
+            padding: 10px;
+            border-radius: 6px;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 12px;
             cursor: pointer;
             width: 100%;
-            margin-top: 5px;
-        }
-        
-        .button:hover {
-            background: #3d3d3d;
         }
         
         .chart-container {
+            flex: 1;
             background: #111111;
-            border-radius: 10px;
-            padding: 10px;
-            margin-bottom: 15px;
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 10px;
             border: 1px solid #333333;
-            height: 65vh; /* Занимает 65% высоты окна */
-            min-height: 400px;
+            min-height: 300px;
             position: relative;
         }
         
@@ -123,45 +136,41 @@
             transform: translate(-50%, -50%);
             text-align: center;
             color: #cccccc;
+            font-size: 12px;
         }
         
         .spinner {
             border: 3px solid #333333;
             border-top: 3px solid #ffffff;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            margin: 0 auto 8px;
         }
         
         .status-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
         }
         
         .status-card {
             background: #111111;
             border: 1px solid #333333;
-            border-radius: 8px;
-            padding: 12px;
+            border-radius: 6px;
+            padding: 10px;
         }
         
         .status-label {
-            font-size: 10px;
+            font-size: 9px;
             color: #cccccc;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
         
         .status-value {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 600;
             color: #ffffff;
         }
@@ -171,30 +180,31 @@
         
         .targets-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
         }
         
         .target-card {
             background: #111111;
-            border: 1px solid #333333;
-            border-radius: 8px;
-            padding: 12px;
+            border: 1px solid;
+            border-radius: 6px;
+            padding: 8px;
         }
         
-        .target-card.stop { border-left: 4px solid #ff0000; }
-        .target-card.entry { border-left: 4px solid #0088ff; }
-        .target-card.profit { border-left: 4px solid #00ff00; }
+        .target-card.stop { border-color: #ff0000; }
+        .target-card.entry { border-color: #0088ff; }
+        .target-card.profit { border-color: #00ff00; }
         
         .target-name {
-            font-size: 10px;
+            font-size: 9px;
             color: #cccccc;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
+            white-space: nowrap;
         }
         
         .target-price {
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 600;
         }
         
@@ -202,25 +212,25 @@
         .price-entry { color: #0088ff; }
         .price-profit { color: #00ff00; }
         
-        .telegram-buttons {
+        .buttons-row {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
         
         .tg-btn {
             flex: 1;
-            padding: 12px;
+            padding: 10px;
             border: 1px solid #333333;
-            border-radius: 8px;
+            border-radius: 6px;
             background: #2d2d2d;
             color: #ffffff;
             font-weight: 600;
-            font-size: 12px;
+            font-size: 11px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 5px;
         }
         
         .hidden {
@@ -229,27 +239,41 @@
         
         .signal-alert {
             position: fixed;
-            top: 20px;
+            top: 10px;
             left: 50%;
             transform: translateX(-50%);
             background: #111111;
             color: #ffffff;
-            padding: 12px 20px;
-            border-radius: 8px;
+            padding: 10px 15px;
+            border-radius: 6px;
             border: 1px solid #333333;
             z-index: 1000;
             text-align: center;
-            min-width: 250px;
+            min-width: 200px;
+            font-size: 12px;
         }
         
         @media (max-width: 768px) {
-            .status-grid,
+            .settings-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .status-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
             .targets-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .settings-grid {
                 grid-template-columns: 1fr;
             }
             
-            .telegram-buttons {
-                flex-direction: column;
+            .targets-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
     </style>
@@ -257,46 +281,39 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>TREND_1H FUTURES</h1>
-            <p>Real-time Binance Futures Trading Indicator</p>
+            <h1>TREND_1H FUTURES INDICATOR</h1>
+            <p>Based on original Pine Script logic</p>
         </div>
         
         <div class="controls">
-            <div class="control-row">
-                <div class="control-group">
-                    <label>Futures Symbol</label>
-                    <select id="symbol">
-                        <!-- Will be populated by JavaScript -->
-                    </select>
-                </div>
-                
-                <div class="control-group">
-                    <label>Timeframe</label>
-                    <select id="timeframe">
-                        <option value="1m">1 Minute</option>
-                        <option value="5m">5 Minutes</option>
-                        <option value="15m">15 Minutes</option>
-                        <option value="30m">30 Minutes</option>
-                        <option value="1h" selected>1 Hour</option>
-                        <option value="4h">4 Hours</option>
-                    </select>
-                </div>
+            <div class="symbol-row">
+                <select id="symbol">
+                    <!-- Will be populated by JavaScript -->
+                </select>
+                <select id="timeframe">
+                    <option value="1m">1 min</option>
+                    <option value="5m">5 min</option>
+                    <option value="15m">15 min</option>
+                    <option value="30m">30 min</option>
+                    <option value="1h" selected>1 hour</option>
+                    <option value="4h">4 hours</option>
+                </select>
             </div>
             
-            <div class="control-row">
-                <div class="control-group">
+            <div class="settings-grid">
+                <div class="setting-group">
                     <label>Trend Length</label>
-                    <input type="number" id="trendLength" value="10" min="5" max="50">
+                    <input type="number" id="trendLength" value="10" min="1" max="50">
                 </div>
                 
-                <div class="control-group">
+                <div class="setting-group">
                     <label>Target Multiplier</label>
-                    <input type="number" id="targetMult" value="0" min="0" max="10">
+                    <input type="number" id="targetMultiplier" value="0" min="0" max="10">
                 </div>
                 
-                <div class="control-group">
+                <div class="setting-group">
                     <label>ATR Period</label>
-                    <input type="number" id="atrPeriod" value="20" min="10" max="50">
+                    <input type="number" id="atrPeriod" value="20" min="5" max="50">
                 </div>
             </div>
             
@@ -307,14 +324,14 @@
             <canvas id="chart"></canvas>
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                <p>Loading chart data...</p>
+                <p>Loading chart...</p>
             </div>
         </div>
         
         <div class="status-grid">
             <div class="status-card">
                 <div class="status-label">Trend</div>
-                <div class="status-value" id="trendStatus">Loading...</div>
+                <div class="status-value" id="trendStatus">-</div>
             </div>
             
             <div class="status-card">
@@ -323,13 +340,13 @@
             </div>
             
             <div class="status-card">
-                <div class="status-label">ATR</div>
+                <div class="status-label">ATR Value</div>
                 <div class="status-value" id="atrStatus">0.00</div>
             </div>
             
             <div class="status-card">
-                <div class="status-label">Last Update</div>
-                <div class="status-value" id="updateStatus">--:--:--</div>
+                <div class="status-label">SMA High</div>
+                <div class="status-value" id="smaHighStatus">0.00</div>
             </div>
         </div>
         
@@ -337,12 +354,12 @@
             <!-- Targets will be populated by JavaScript -->
         </div>
         
-        <div class="telegram-buttons">
+        <div class="buttons-row">
             <button class="tg-btn" id="shareBtn">
-                📤 Share Signal
+                📤 Share
             </button>
             <button class="tg-btn" id="fullscreenBtn">
-                📊 Fullscreen
+                📊 Full
             </button>
         </div>
     </div>
