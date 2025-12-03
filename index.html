@@ -3,351 +3,501 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Погода по GPS</title>
+    <title>TradingView Chart - Trend_1H [☆GREAT ANNA☆]</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            background: #0f172a;
+            color: #f8fafc;
+            overflow-x: hidden;
             min-height: 100vh;
-            padding: 15px;
-            color: #333;
         }
+        
         .container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            max-width: 100%;
+            padding: 16px;
         }
+        
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            text-align: center;
             margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f0f0f0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-radius: 16px;
+            border: 1px solid #475569;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
+        
         .header h1 {
-            color: #2575fc;
-            font-size: 1.5rem;
+            font-size: 22px;
+            margin-bottom: 8px;
+            color: #f1f5f9;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(45deg, #22c55e, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        .refresh-btn {
-            background: #2575fc;
+        
+        .header p {
+            font-size: 14px;
+            color: #cbd5e1;
+            margin-bottom: 12px;
+            opacity: 0.9;
+        }
+        
+        .controls {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #475569;
+        }
+        
+        .control-group {
+            margin-bottom: 16px;
+        }
+        
+        .control-group label {
+            display: block;
+            font-size: 14px;
+            color: #e2e8f0;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        select, input {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 2px solid #475569;
+            background: #0f172a;
+            color: #f1f5f9;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white;
             border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 15px;
             cursor: pointer;
-            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 8px;
+            position: relative;
+            overflow: hidden;
         }
+        
+        .button:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+        }
+        
+        .button:active {
+            transform: translateY(0);
+        }
+        
+        .chart-container {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 12px;
+            border: 1px solid #475569;
+            margin-bottom: 20px;
+            min-height: 550px;
+            position: relative;
+        }
+        
+        #tv_chart_container {
+            width: 100%;
+            height: 550px;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .status-bar {
+            background: #0f172a;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 12px;
+            border: 1px solid #475569;
+            font-size: 13px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 8px;
+        }
+        
+        .indicator-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        .dot-up { 
+            background: #22c55e; 
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+            animation: pulse 2s infinite;
+        }
+        
+        .dot-down { 
+            background: #ef4444; 
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+            animation: pulse 2s infinite;
+        }
+        
+        .dot-neutral {
+            background: #94a3b8;
+            box-shadow: 0 0 8px rgba(148, 163, 184, 0.4);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .symbol-info {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        
         .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             text-align: center;
-            padding: 40px 0;
-            display: none;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 30px;
+            border-radius: 16px;
+            border: 1px solid #475569;
+            z-index: 1000;
         }
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #2575fc;
+        
+        .loading-spinner {
+            border: 4px solid #334155;
+            border-top: 4px solid #3b82f6;
             border-radius: 50%;
             width: 50px;
             height: 50px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 0 auto 15px;
         }
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .weather-card { display: none; }
-        .location {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .current-weather {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            padding: 20px;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            border-radius: 15px;
-        }
-        .temperature {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #2575fc;
-        }
-        .weather-icon img {
-            width: 80px;
-            height: 80px;
-        }
-        .description {
-            font-size: 1.1rem;
-            color: #666;
-        }
-        .weather-details {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .detail-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px;
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-        .detail-item i { color: #2575fc; font-size: 1.5rem; }
-        .detail-info { display: flex; flex-direction: column; }
-        .detail-label { font-size: 0.8rem; color: #666; }
-        .detail-value { font-size: 1rem; font-weight: bold; }
-        .error {
-            text-align: center;
-            padding: 20px;
-            background: #ffe6e6;
-            border-radius: 10px;
-            margin: 20px 0;
-            display: none;
-        }
-        .retry-btn {
-            background: #2575fc;
+        
+        .telegram-btn {
+            background: linear-gradient(135deg, #0088cc 0%, #006699 100%);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 20px;
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-weight: 600;
             cursor: pointer;
-            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            width: 100%;
+            transition: all 0.3s ease;
         }
-        .footer {
+        
+        .telegram-btn:hover {
+            background: linear-gradient(135deg, #006699 0%, #005580 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 136, 204, 0.3);
+        }
+        
+        .targets-container {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid #475569;
+        }
+        
+        .targets-title {
+            font-size: 14px;
+            color: #cbd5e1;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .targets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        
+        .target-item {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 10px;
+            border-radius: 8px;
             text-align: center;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-            color: #666;
-            font-size: 0.8rem;
+            border-left: 4px solid #3b82f6;
         }
+        
+        .target-label {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+        
+        .target-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+        
+        .target-profit {
+            color: #22c55e;
+        }
+        
+        .target-loss {
+            color: #ef4444;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 12px;
+            }
+            
+            .header {
+                padding: 16px;
+            }
+            
+            .header h1 {
+                font-size: 18px;
+            }
+            
+            .controls {
+                padding: 16px;
+            }
+            
+            .input-row {
+                flex-direction: column;
+            }
+            
+            select, input {
+                width: 100%;
+            }
+            
+            #tv_chart_container {
+                height: 450px;
+            }
+            
+            .status-bar {
+                grid-template-columns: 1fr;
+            }
+            
+            .targets-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
         @media (max-width: 480px) {
-            .container { padding: 15px; margin: 10px; }
-            .temperature { font-size: 2.5rem; }
-            .weather-icon img { width: 60px; height: 60px; }
+            .targets-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            #tv_chart_container {
+                height: 400px;
+            }
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .success-message {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+            color: #86efac;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-align: center;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🌤️ Погода</h1>
-            <button id="refresh-btn" class="refresh-btn">↻</button>
+            <h1>Trend_1H [☆GREAT ANNA☆]</h1>
+            <p>Профессиональный индикатор для определения тренда и целей</p>
         </div>
         
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p>Определяем местоположение...</p>
+        <div class="controls">
+            <div class="control-group">
+                <label>📊 Торговая пара</label>
+                <div class="input-row">
+                    <select id="symbolSelect">
+                        <option value="BTCUSDT">BTC/USDT</option>
+                        <option value="ETHUSDT">ETH/USDT</option>
+                        <option value="BNBUSDT">BNB/USDT</option>
+                        <option value="SOLUSDT">SOL/USDT</option>
+                        <option value="XRPUSDT">XRP/USDT</option>
+                        <option value="ADAUSDT">ADA/USDT</option>
+                        <option value="DOGEUSDT">DOGE/USDT</option>
+                        <option value="DOTUSDT">DOT/USDT</option>
+                        <option value="LINKUSDT">LINK/USDT</option>
+                        <option value="MATICUSDT">MATIC/USDT</option>
+                    </select>
+                    <select id="timeframeSelect">
+                        <option value="5m">5 минут</option>
+                        <option value="15m">15 минут</option>
+                        <option value="1h" selected>1 час</option>
+                        <option value="4h">4 часа</option>
+                        <option value="1d">День</option>
+                        <option value="1w">Неделя</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label>⚙️ Настройки индикатора</label>
+                <div class="input-row">
+                    <div style="flex: 1;">
+                        <input type="number" id="trendLength" value="10" min="1" max="50" 
+                               placeholder="Длина тренда (10)">
+                    </div>
+                    <div style="flex: 1;">
+                        <input type="number" id="targetMultiplier" value="0" min="0" max="10" 
+                               placeholder="Множитель целей (0)">
+                    </div>
+                    <div style="flex: 1;">
+                        <input type="number" id="atrPeriod" value="20" min="5" max="50" 
+                               placeholder="Период ATR (20)">
+                    </div>
+                </div>
+            </div>
+            
+            <button class="button" id="updateChartBtn">
+                🔄 Обновить график
+            </button>
+            
+            <div id="messageContainer"></div>
         </div>
         
-        <div class="weather-card" id="weather-card">
-            <div class="location">
-                <h2 id="location-name">Загрузка...</h2>
-            </div>
-            
-            <div class="current-weather">
-                <div class="temperature">
-                    <span id="temperature">--</span>°C
+        <div class="chart-container">
+            <div id="tv_chart_container">
+                <div class="loading" id="loadingIndicator">
+                    <div class="loading-spinner"></div>
+                    <p>Инициализация графика...</p>
+                    <p style="font-size: 12px; color: #94a3b8; margin-top: 10px;">
+                        Загрузка TradingView...
+                    </p>
                 </div>
-                <div class="weather-icon" id="weather-icon">
-                    <img src="" alt="">
-                </div>
-                <div class="description" id="description">Загрузка...</div>
-            </div>
-            
-            <div class="weather-details">
-                <div class="detail-item">
-                    <i>💨</i>
-                    <div class="detail-info">
-                        <span class="detail-label">Ветер</span>
-                        <span id="wind-speed" class="detail-value">-- км/ч</span>
-                    </div>
-                </div>
-                <div class="detail-item">
-                    <i>💧</i>
-                    <div class="detail-info">
-                        <span class="detail-label">Влажность</span>
-                        <span id="humidity" class="detail-value">--%</span>
-                    </div>
-                </div>
-                <div class="detail-item">
-                    <i>📊</i>
-                    <div class="detail-info">
-                        <span class="detail-label">Давление</span>
-                        <span id="pressure" class="detail-value">-- гПа</span>
-                    </div>
-                </div>
-                <div class="detail-item">
-                    <i>👁️</i>
-                    <div class="detail-info">
-                        <span class="detail-label">Видимость</span>
-                        <span id="visibility" class="detail-value">-- км</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="error" id="error">
-                <p id="error-message">Ошибка</p>
-                <button id="retry-btn" class="retry-btn">Повторить</button>
-            </div>
-            
-            <div class="footer">
-                <p>Обновлено: <span id="last-updated">--:--</span></p>
             </div>
         </div>
+        
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="indicator-dot dot-neutral" id="trendIndicator"></div>
+                <div>
+                    <div style="font-size: 11px; color: #94a3b8;">Тренд</div>
+                    <div id="trendText" style="font-weight: 600;">Определяется...</div>
+                </div>
+            </div>
+            
+            <div class="status-item">
+                <div>📈</div>
+                <div>
+                    <div style="font-size: 11px; color: #94a3b8;">Символ</div>
+                    <div class="symbol-info" id="currentSymbol">BTC/USDT</div>
+                </div>
+            </div>
+            
+            <div class="status-item">
+                <div>⏰</div>
+                <div>
+                    <div style="font-size: 11px; color: #94a3b8;">Таймфрейм</div>
+                    <div class="symbol-info" id="currentTF">1H</div>
+                </div>
+            </div>
+            
+            <div class="status-item">
+                <div>🎯</div>
+                <div>
+                    <div style="font-size: 11px; color: #94a3b8;">ATR</div>
+                    <div id="atrValue" style="font-weight: 600;">0.00</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="targets-container" id="targetsContainer" style="display: none;">
+            <div class="targets-title">
+                <span>🎯 Цели и стоп-лосс</span>
+            </div>
+            <div class="targets-grid" id="targetsGrid">
+                <!-- Targets will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <button class="telegram-btn" id="shareBtn">
+            📤 Поделиться сигналом в Telegram
+        </button>
+        
+        <button class="telegram-btn" id="fullscreenBtn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); margin-top: 10px;">
+            📊 Полноэкранный режим
+        </button>
     </div>
 
-    <script>
-        // ВАЖНО: Вставьте сюда ваш API ключ из weatherapi.com
-        const API_KEY = 'afe664b00f334b88bfe80615250212';
-        
-        let telegram = null;
-        if (window.Telegram?.WebApp) {
-            telegram = window.Telegram.WebApp;
-            telegram.expand();
-            telegram.enableClosingConfirmation();
-        }
-        
-        document.addEventListener('DOMContentLoaded', initApp);
-        
-        function initApp() {
-            document.getElementById('refresh-btn').addEventListener('click', getLocation);
-            document.getElementById('retry-btn').addEventListener('click', getLocation);
-            
-            if (telegram) {
-                const mainButton = telegram.MainButton;
-                mainButton.setText("Обновить погоду");
-                mainButton.onClick(getLocation);
-                mainButton.show();
-            }
-            
-            getLocation();
-        }
-        
-        function getLocation() {
-            showLoading(true);
-            hideError();
-            
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    position => getWeather(position.coords),
-                    error => {
-                        showError("Разрешите доступ к геолокации или введите город вручную");
-                        showLoading(false);
-                        // Попробуем получить погоду по IP
-                        getWeatherByIP();
-                    },
-                    { timeout: 10000 }
-                );
-            } else {
-                getWeatherByIP();
-            }
-        }
-        
-        async function getWeather(coords) {
-            try {
-                const { latitude, longitude } = coords;
-                const url = `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${latitude},${longitude}&lang=ru`;
-                
-                const response = await fetch(url);
-                if (!response.ok) throw new Error('Ошибка API');
-                
-                const data = await response.json();
-                updateUI(data);
-                showLoading(false);
-                updateLastUpdated();
-                
-            } catch (error) {
-                console.error('Ошибка:', error);
-                showError("Не удалось получить погоду. Проверьте интернет и API ключ.");
-                showLoading(false);
-            }
-        }
-        
-        async function getWeatherByIP() {
-            try {
-                const url = `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=auto:ip&lang=ru`;
-                const response = await fetch(url);
-                
-                if (!response.ok) throw new Error('Ошибка API');
-                
-                const data = await response.json();
-                updateUI(data);
-                showLoading(false);
-                
-            } catch (error) {
-                showError("Не удалось определить местоположение");
-                showLoading(false);
-            }
-        }
-        
-        function updateUI(data) {
-            if (!data || !data.location || !data.current) {
-                showError("Некорректные данные от сервера");
-                return;
-            }
-            
-            const { location, current } = data;
-            
-            // Обновляем данные
-            document.getElementById('location-name').textContent = 
-                `${location.name}, ${location.country}`;
-            document.getElementById('temperature').textContent = 
-                Math.round(current.temp_c);
-            document.getElementById('description').textContent = 
-                current.condition.text;
-            
-            // Иконка погоды
-            const icon = document.querySelector('#weather-icon img');
-            icon.src = current.condition.icon.startsWith('//') 
-                ? `https:${current.condition.icon}` 
-                : current.condition.icon;
-            icon.alt = current.condition.text;
-            
-            // Детали
-            document.getElementById('wind-speed').textContent = 
-                `${current.wind_kph} км/ч`;
-            document.getElementById('humidity').textContent = 
-                `${current.humidity}%`;
-            document.getElementById('pressure').textContent = 
-                `${current.pressure_mb} гПа`;
-            document.getElementById('visibility').textContent = 
-                `${current.vis_km} км`;
-            
-            // Показываем карточку
-            document.getElementById('weather-card').style.display = 'block';
-        }
-        
-        function updateLastUpdated() {
-            const now = new Date();
-            document.getElementById('last-updated').textContent = 
-                now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        }
-        
-        function showLoading(show) {
-            document.getElementById('loading').style.display = show ? 'block' : 'none';
-        }
-        
-        function showError(message) {
-            document.getElementById('error-message').textContent = message;
-            document.getElementById('error').style.display = 'block';
-        }
-        
-        function hideError() {
-            document.getElementById('error').style.display = 'none';
-        }
-    </script>
+    <script src="app.js"></script>
 </body>
-
 </html>
