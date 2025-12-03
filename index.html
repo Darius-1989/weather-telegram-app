@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ TREND_1H FUTURES ⚡</title>
+    <title>Trend_1H Индикатор - Telegram Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightweight-charts@4.0.1/dist/lightweight-charts.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&display=swap');
-        
         * {
             margin: 0;
             padding: 0;
@@ -15,151 +14,195 @@
         }
         
         body {
-            font-family: 'Orbitron', monospace;
-            background: #000000;
-            color: #00ff00;
-            overflow-x: hidden;
-            text-shadow: 0 0 10px #00ff00;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #f1f5f9;
+            min-height: 100vh;
+            padding: 10px;
         }
         
         .container {
-            padding: 15px;
-            background: linear-gradient(180deg, #000000 0%, #0a0a0a 100%);
-            min-height: 100vh;
-            animation: fadeIn 1s ease-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+            max-width: 100%;
         }
         
         .header {
             text-align: center;
-            padding: 20px;
-            margin-bottom: 20px;
-            background: rgba(0, 255, 0, 0.05);
-            border: 1px solid #00ff00;
-            border-radius: 15px;
-            box-shadow: 0 0 30px rgba(0, 255, 0, 0.2);
-            animation: glow 2s infinite alternate;
-        }
-        
-        @keyframes glow {
-            from { box-shadow: 0 0 20px rgba(0, 255, 0, 0.2); }
-            to { box-shadow: 0 0 40px rgba(0, 255, 0, 0.4); }
+            padding: 15px;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #475569;
         }
         
         .header h1 {
-            font-size: 22px;
-            font-weight: 800;
-            color: #00ff00;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 10px;
-            animation: textGlow 1.5s infinite alternate;
-        }
-        
-        @keyframes textGlow {
-            from { text-shadow: 0 0 10px #00ff00; }
-            to { text-shadow: 0 0 20px #00ff00, 0 0 30px #00ff00; }
+            font-size: 18px;
+            color: #22c55e;
+            margin-bottom: 5px;
         }
         
         .header p {
             font-size: 12px;
-            color: #80ff80;
-            opacity: 0.8;
+            color: #94a3b8;
         }
         
         .controls {
-            background: rgba(0, 255, 0, 0.05);
-            border: 1px solid #00ff00;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .control-row {
-            display: flex;
-            gap: 10px;
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 15px;
             margin-bottom: 15px;
-            flex-wrap: wrap;
+            border: 1px solid #475569;
         }
         
         .control-group {
-            flex: 1;
-            min-width: 150px;
+            margin-bottom: 12px;
         }
         
         .control-group label {
             display: block;
-            font-size: 11px;
-            color: #80ff80;
+            font-size: 12px;
+            color: #cbd5e1;
             margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
         }
         
         select, input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #00ff00;
-            border-radius: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: #00ff00;
-            font-family: 'Orbitron', monospace;
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: white;
             font-size: 14px;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-        
-        select:focus, input:focus {
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
         }
         
         .button {
-            background: linear-gradient(45deg, #000000, #00ff00);
-            color: #000000;
-            border: 2px solid #00ff00;
-            padding: 15px;
-            border-radius: 10px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 14px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
             cursor: pointer;
             width: 100%;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            transition: all 0.3s ease;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-        }
-        
-        .button:hover {
-            background: linear-gradient(45deg, #00ff00, #000000);
-            color: #00ff00;
-            box-shadow: 0 0 25px rgba(0, 255, 0, 0.7);
+            font-size: 14px;
         }
         
         .chart-container {
-            background: rgba(0, 255, 0, 0.05);
-            border: 1px solid #00ff00;
-            border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 20px;
-            height: 450px;
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #475569;
+            height: 500px;
             position: relative;
-            overflow: hidden;
         }
         
         #chart {
             width: 100%;
             height: 100%;
+            border-radius: 8px;
+        }
+        
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .status-item {
+            background: #1e293b;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+        }
+        
+        .status-label {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+        
+        .status-value {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .trend-up { color: #22c55e; }
+        .trend-down { color: #ef4444; }
+        .trend-neutral { color: #94a3b8; }
+        
+        .targets {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #475569;
+        }
+        
+        .targets-title {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: #cbd5e1;
+        }
+        
+        .targets-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .target-item {
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .target-name {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-bottom: 2px;
+        }
+        
+        .target-price {
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .telegram-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .tg-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .tg-btn-primary {
+            background: linear-gradient(135deg, #0088cc 0%, #006699 100%);
+            color: white;
+        }
+        
+        .tg-btn-secondary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
         }
         
         .loading {
@@ -168,170 +211,21 @@
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            color: #00ff00;
         }
         
         .spinner {
-            border: 4px solid rgba(0, 255, 0, 0.3);
-            border-top: 4px solid #00ff00;
+            border: 3px solid #334155;
+            border-top: 3px solid #3b82f6;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
+            margin: 0 auto 10px;
         }
         
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
-        }
-        
-        .status-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .status-card {
-            background: rgba(0, 255, 0, 0.05);
-            border: 1px solid #00ff00;
-            border-radius: 10px;
-            padding: 15px;
-            animation: slideUp 0.5s ease-out;
-        }
-        
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .status-label {
-            font-size: 10px;
-            color: #80ff80;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-        }
-        
-        .status-value {
-            font-size: 16px;
-            font-weight: 700;
-            color: #00ff00;
-        }
-        
-        .trend-up {
-            color: #00ff00;
-            animation: blinkGreen 1s infinite;
-        }
-        
-        .trend-down {
-            color: #ff0000;
-            animation: blinkRed 1s infinite;
-        }
-        
-        @keyframes blinkGreen {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        @keyframes blinkRed {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .targets-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .target-card {
-            background: rgba(0, 255, 0, 0.05);
-            border: 1px solid;
-            border-radius: 10px;
-            padding: 15px;
-            position: relative;
-            overflow: hidden;
-            animation: slideIn 0.6s ease-out;
-        }
-        
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        
-        .target-card.stop {
-            border-color: #ff0000;
-            background: rgba(255, 0, 0, 0.05);
-        }
-        
-        .target-card.entry {
-            border-color: #0088ff;
-            background: rgba(0, 136, 255, 0.05);
-        }
-        
-        .target-card.profit {
-            border-color: #00ff00;
-            background: rgba(0, 255, 0, 0.05);
-        }
-        
-        .target-name {
-            font-size: 11px;
-            color: #80ff80;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-        }
-        
-        .target-price {
-            font-size: 16px;
-            font-weight: 700;
-        }
-        
-        .price-stop { color: #ff0000; }
-        .price-entry { color: #0088ff; }
-        .price-profit { color: #00ff00; }
-        
-        .telegram-buttons {
-            display: flex;
-            gap: 15px;
-        }
-        
-        .tg-btn {
-            flex: 1;
-            padding: 15px;
-            border: 2px solid;
-            border-radius: 10px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        .tg-btn.share {
-            background: rgba(0, 136, 255, 0.1);
-            border-color: #0088ff;
-            color: #0088ff;
-        }
-        
-        .tg-btn.fullscreen {
-            background: rgba(0, 255, 0, 0.1);
-            border-color: #00ff00;
-            color: #00ff00;
-        }
-        
-        .tg-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(0, 255, 0, 0.3);
         }
         
         .hidden {
@@ -343,163 +237,119 @@
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: linear-gradient(45deg, #000000, #00ff00);
-            color: #000000;
-            padding: 15px 25px;
-            border-radius: 10px;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
             z-index: 1000;
-            border: 2px solid #00ff00;
-            animation: alertSlide 0.5s ease-out, alertPulse 2s infinite;
-            font-weight: 700;
-            text-align: center;
-            min-width: 300px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            animation: slideDown 0.3s ease;
         }
         
-        @keyframes alertSlide {
+        .signal-alert.down {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        
+        @keyframes slideDown {
             from { top: -100px; }
             to { top: 20px; }
-        }
-        
-        @keyframes alertPulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 0, 0.5); }
-            50% { box-shadow: 0 0 40px rgba(0, 255, 0, 0.8); }
-        }
-        
-        .scan-line {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #00ff00, transparent);
-            z-index: 999;
-            animation: scan 3s linear infinite;
-        }
-        
-        @keyframes scan {
-            0% { top: 0%; }
-            100% { top: 100%; }
-        }
-        
-        @media (max-width: 768px) {
-            .status-grid,
-            .targets-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .chart-container {
-                height: 350px;
-            }
-            
-            .telegram-buttons {
-                flex-direction: column;
-            }
         }
     </style>
 </head>
 <body>
-    <div class="scan-line"></div>
-    
     <div class="container">
         <div class="header">
-            <h1>⚡ TREND_1H FUTURES ⚡</h1>
-            <p>REAL-TIME BINANCE FUTURES TRADING SYSTEM</p>
+            <h1>Trend_1H [☆GREAT ANNA☆]</h1>
+            <p>Профессиональный индикатор тренда и целей</p>
         </div>
         
         <div class="controls">
-            <div class="control-row">
-                <div class="control-group">
-                    <label>FUTURES SYMBOL</label>
+            <div class="control-group">
+                <label>Торговая пара</label>
+                <div class="input-row">
                     <select id="symbol">
-                        <!-- Will be populated by JavaScript -->
+                        <option value="BTCUSDT">BTC/USDT</option>
+                        <option value="ETHUSDT">ETH/USDT</option>
+                        <option value="BNBUSDT">BNB/USDT</option>
+                        <option value="SOLUSDT">SOL/USDT</option>
+                        <option value="XRPUSDT">XRP/USDT</option>
+                        <option value="ADAUSDT">ADA/USDT</option>
+                        <option value="DOTUSDT">DOT/USDT</option>
+                        <option value="DOGEUSDT">DOGE/USDT</option>
                     </select>
-                </div>
-                
-                <div class="control-group">
-                    <label>TIMEFRAME</label>
                     <select id="timeframe">
-                        <option value="1m">1 MINUTE</option>
-                        <option value="5m">5 MINUTES</option>
-                        <option value="15m">15 MINUTES</option>
-                        <option value="30m">30 MINUTES</option>
-                        <option value="1h" selected>1 HOUR</option>
-                        <option value="4h">4 HOURS</option>
+                        <option value="5m">5 минут</option>
+                        <option value="15m">15 минут</option>
+                        <option value="1h" selected>1 час</option>
+                        <option value="4h">4 часа</option>
+                        <option value="1d">1 день</option>
                     </select>
                 </div>
             </div>
             
-            <div class="control-row">
-                <div class="control-group">
-                    <label>TREND LENGTH</label>
-                    <input type="number" id="trendLength" value="10" min="5" max="50">
+            <div class="control-group">
+                <label>Настройки индикатора</label>
+                <div class="input-row">
+                    <input type="number" id="trendLength" value="10" min="1" max="50" placeholder="Длина тренда">
+                    <input type="number" id="targetMultiplier" value="0" min="0" max="10" placeholder="Множитель целей">
                 </div>
-                
-                <div class="control-group">
-                    <label>TARGET MULTIPLIER</label>
-                    <input type="number" id="targetMult" value="0" min="0" max="10">
-                </div>
-                
-                <div class="control-group">
-                    <label>ATR PERIOD</label>
-                    <input type="number" id="atrPeriod" value="20" min="10" max="50">
+                <div class="input-row">
+                    <input type="number" id="atrPeriod" value="20" min="5" max="50" placeholder="Период ATR">
+                    <input type="number" id="atrMultiplier" value="0.3" min="0.1" max="1" step="0.1" placeholder="Множитель ATR">
                 </div>
             </div>
             
-            <button class="button" id="updateBtn">
-                ⚡ UPDATE CHART ⚡
-            </button>
+            <button class="button" id="updateBtn">🔄 Обновить график</button>
         </div>
         
         <div class="chart-container">
-            <canvas id="chart"></canvas>
+            <div id="chart"></div>
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                <p>LOADING FUTURES DATA...</p>
-                <p style="font-size: 10px; margin-top: 10px; opacity: 0.6;">CONNECTING TO BINANCE...</p>
+                <p>Загрузка графика...</p>
             </div>
         </div>
         
-        <div class="status-grid">
-            <div class="status-card">
-                <div class="status-label">TREND</div>
-                <div class="status-value" id="trendStatus">LOADING...</div>
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-label">Тренд</div>
+                <div class="status-value" id="trendStatus">Загрузка...</div>
             </div>
-            
-            <div class="status-card">
-                <div class="status-label">PRICE</div>
-                <div class="status-value" id="priceStatus">0.00</div>
+            <div class="status-item">
+                <div class="status-label">Символ</div>
+                <div class="status-value" id="symbolStatus">BTC/USDT</div>
             </div>
-            
-            <div class="status-card">
-                <div class="status-label">ATR VOLATILITY</div>
-                <div class="status-value" id="atrStatus">0.00</div>
+            <div class="status-item">
+                <div class="status-label">ATR</div>
+                <div class="status-value" id="atrValue">0.00</div>
             </div>
-            
-            <div class="status-card">
-                <div class="status-label">LAST UPDATE</div>
-                <div class="status-value" id="updateStatus">--:--:--</div>
+            <div class="status-item">
+                <div class="status-label">Цена</div>
+                <div class="status-value" id="priceValue">0.00</div>
             </div>
         </div>
         
-        <div class="targets-grid" id="targetsGrid">
-            <!-- Targets will be populated by JavaScript -->
+        <div class="targets">
+            <div class="targets-title">🎯 Цели и стоп-лосс</div>
+            <div class="targets-grid" id="targetsGrid">
+                <!-- Targets will be added here -->
+            </div>
         </div>
         
         <div class="telegram-buttons">
-            <button class="tg-btn share" id="shareBtn">
-                📤 SHARE SIGNAL
+            <button class="tg-btn tg-btn-primary" id="shareBtn">
+                📤 Поделиться
             </button>
-            <button class="tg-btn fullscreen" id="fullscreenBtn">
-                📊 FULLSCREEN
+            <button class="tg-btn tg-btn-secondary" id="fullscreenBtn">
+                📊 Полный экран
             </button>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <!-- Lightweight Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.0.1/dist/lightweight-charts.standalone.production.js"></script>
+    
+    <!-- Main App -->
     <script src="app.js"></script>
 </body>
 </html>
