@@ -10,13 +10,15 @@ tg.expand();
 // State variables
 let chart = null;
 let candleSeries = null;
-let lineSeries = [];
-let trendLines = [];
 let currentData = [];
 let isLoading = false;
-let lastPrice = 0;
-let updateInterval = null;
-let liveUpdateInterval = null;
+let priceSeries = null;
+let stopLossSeries = null;
+let entrySeries = null;
+let tp1Series = null;
+let tp2Series = null;
+let tp3Series = null;
+let tp4Series = null;
 
 // TradingView Pine Script логика
 let indicator = {
@@ -25,14 +27,19 @@ let indicator = {
     smaLow: 0,
     atr: 0,
     price: 0,
-    targets: [],
+    entryPrice: 0,
+    stopLoss: 0,
+    tp1: 0,
+    tp2: 0,
+    tp3: 0,
+    tp4: 0,
     isBullish: false,
     stopLossHit: false,
-    trendChanged: false,
+    signal_up: false,
+    signal_down: false,
     trendLength: 10,
     targetMultiplier: 0,
-    atrPeriod: 20,
-    lastUpdate: new Date()
+    atrPeriod: 20
 };
 
 // Top 50 Binance Futures монет
@@ -56,76 +63,141 @@ const BINANCE_TOP_50 = [
 function initChart() {
     console.log('Initializing chart...');
     
-    const chartContainer = document.querySelector('.chart-container');
-    const chartElement = document.getElementById('chart');
-    chartElement.innerHTML = '';
+    const chartContainer = document.getElementById('chart');
+    chartContainer.innerHTML = '';
     
-    chart = LightweightCharts.createChart(chartElement, {
-        width: chartElement.clientWidth,
-        height: chartElement.clientHeight,
+    chart = LightweightCharts.createChart(chartContainer, {
+        width: chartContainer.clientWidth,
+        height: chartContainer.clientHeight,
         layout: { 
-            background: { color: '#000000' },
+            background: { color: '#000000' }, 
             textColor: '#DDDDDD',
-            fontFamily: "'Exo 2', sans-serif"
+            fontFamily: 'Monaco, "Courier New", monospace'
         },
         grid: { 
-            vertLines: { color: 'rgba(255, 255, 255, 0.05)' },
-            horzLines: { color: 'rgba(255, 255, 255, 0.05)' }
+            vertLines: { color: '#222222', visible: false }, 
+            horzLines: { color: '#222222', visible: false } 
         },
         crosshair: { 
             mode: LightweightCharts.CrosshairMode.Normal,
             vertLine: {
                 width: 1,
-                color: 'rgba(0, 102, 204, 0.5)',
-                style: LightweightCharts.LineStyle.Dashed
+                color: '#333333',
+                style: 2
             },
             horzLine: {
                 width: 1,
-                color: 'rgba(0, 102, 204, 0.5)',
-                style: LightweightCharts.LineStyle.Dashed
+                color: '#333333',
+                style: 2
             }
         },
         rightPriceScale: {
-            borderColor: 'rgba(255, 255, 255, 0.1)',
-            textColor: '#888'
+            borderColor: '#333333',
+            scaleMargins: {
+                top: 0.1,
+                bottom: 0.1
+            }
         },
         timeScale: {
-            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderColor: '#333333',
             timeVisible: true,
             secondsVisible: false,
             rightOffset: 12,
             barSpacing: 8,
             minBarSpacing: 3,
             fixLeftEdge: true,
-            fixRightEdge: true
+            fixRightEdge: false
         },
-        handleScroll: {
-            mouseWheel: true,
-            pressedMouseMove: true,
-            horzTouchDrag: true,
-            vertTouchDrag: true
+        handleScroll: { 
+            mouseWheel: true, 
+            pressedMouseMove: true, 
+            horzTouchDrag: true, 
+            vertTouchDrag: true 
         },
-        handleScale: {
-            axisPressedMouseMove: true,
-            mouseWheel: true,
-            pinch: true
-        }
+        handleScale: { 
+            axisPressedMouseMove: true, 
+            mouseWheel: true, 
+            pinch: true 
+        },
     });
     
+    // Свечной график
     candleSeries = chart.addCandlestickSeries({
-        upColor: '#00ffaa',
-        downColor: '#ff4444',
-        borderUpColor: '#00ffaa',
-        borderDownColor: '#ff4444',
-        wickUpColor: '#00ffaa',
-        wickDownColor: '#ff4444',
+        upColor: '#26a69a',
+        downColor: '#ef5350',
+        borderUpColor: '#26a69a',
+        borderDownColor: '#ef5350',
+        wickUpColor: '#26a69a',
+        wickDownColor: '#ef5350',
+        priceLineVisible: false,
+        lastValueVisible: false
+    });
+    
+    // Линия текущей цены
+    priceSeries = chart.addLineSeries({
+        color: '#ffffff',
+        lineWidth: 1,
+        lineStyle: 0,
+        priceLineVisible: false,
+        lastValueVisible: false
+    });
+    
+    // Линия стоп лосса
+    stopLossSeries = chart.addLineSeries({
+        color: '#ff0000',
+        lineWidth: 2,
+        lineStyle: 2,
+        priceLineVisible: false,
+        lastValueVisible: false
+    });
+    
+    // Линия точки входа
+    entrySeries = chart.addLineSeries({
+        color: '#0066cc',
+        lineWidth: 2,
+        lineStyle: 0,
+        priceLineVisible: false,
+        lastValueVisible: false
+    });
+    
+    // Линии тейк профитов
+    tp1Series = chart.addLineSeries({
+        color: '#00ff00',
+        lineWidth: 1,
+        lineStyle: 2,
+        priceLineVisible: false,
+        lastValueVisible: false
+    });
+    
+    tp2Series = chart.addLineSeries({
+        color: '#00ff00',
+        lineWidth: 1,
+        lineStyle: 2,
+        priceLineVisible: false,
+        lastValueVisible: false
+    });
+    
+    tp3Series = chart.addLineSeries({
+        color: '#00ff00',
+        lineWidth: 1,
+        lineStyle: 2,
+        priceLineVisible: false,
+        lastValueVisible: false
+    });
+    
+    tp4Series = chart.addLineSeries({
+        color: '#00ff00',
+        lineWidth: 1,
+        lineStyle: 2,
+        priceLineVisible: false,
+        lastValueVisible: false
     });
     
     window.addEventListener('resize', () => {
-        if (chart && chartElement) {
+        if (chart) {
             chart.applyOptions({
-                width: chartElement.clientWidth,
-                height: chartElement.clientHeight,
+                width: chartContainer.clientWidth,
+                height: chartContainer.clientHeight,
             });
         }
     });
@@ -163,118 +235,95 @@ function calculatePineIndicator() {
     
     // Calculate ATR как в Pine Script
     let atrSum = 0;
-    for (let i = currentData.length - atrPeriod; i < currentData.length; i++) {
+    for (let i = Math.max(0, currentData.length - atrPeriod); i < currentData.length; i++) {
         if (i <= 0) continue;
         const high = currentData[i].high;
         const low = currentData[i].low;
         const prevClose = currentData[i-1].close;
-        const tr = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
+        const tr = Math.max(
+            high - low,
+            Math.abs(high - prevClose),
+            Math.abs(low - prevClose)
+        );
         atrSum += tr;
     }
-    const atr_value = (atrSum / atrPeriod) * 0.3;
+    const atr_value = (atrSum / Math.min(atrPeriod, currentData.length - 1)) * 0.3;
     
     // Calculate SMA как в Pine Script
     let smaHighSum = 0;
     let smaLowSum = 0;
-    for (let i = currentData.length - length; i < currentData.length; i++) {
-        if (i < 0) continue;
+    const startIndex = Math.max(0, currentData.length - length);
+    
+    for (let i = startIndex; i < currentData.length; i++) {
         smaHighSum += currentData[i].high;
         smaLowSum += currentData[i].low;
     }
-    const sma_high = (smaHighSum / length) + atr_value;
-    const sma_low = (smaLowSum / length) - atr_value;
+    
+    const sma_high = (smaHighSum / Math.min(length, currentData.length - startIndex)) + atr_value;
+    const sma_low = (smaLowSum / Math.min(length, currentData.length - startIndex)) - atr_value;
     
     const close = currentData[currentData.length - 1].close;
+    const prevClose = currentData.length > 1 ? currentData[currentData.length - 2].close : close;
     
-    // Determine trend как в Pine Script
-    let trend = indicator.trend === 'up';
+    // Определяем тренд и сигналы
+    let trend = indicator.isBullish;
     let signal_up = false;
     let signal_down = false;
     
-    // Проверяем crossover/сrossunder
-    const prevClose = currentData.length > 1 ? currentData[currentData.length - 2].close : close;
-    const prevSmaHigh = currentData.length > length ? 
-        (smaHighSum - currentData[currentData.length - length].high + currentData[currentData.length - 1].high) / length + atr_value : 
-        sma_high;
-    
-    const prevSmaLow = currentData.length > length ? 
-        (smaLowSum - currentData[currentData.length - length].low + currentData[currentData.length - 1].low) / length - atr_value : 
-        sma_low;
-    
-    // Crossover проверка
-    if (close > sma_high && prevClose <= prevSmaHigh) {
+    // Crossover проверка (цена пересекла sma_high сверху)
+    if (close > sma_high && prevClose <= sma_high) {
         trend = true;
         signal_up = true;
         signal_down = false;
         indicator.stopLossHit = false;
-        indicator.trendChanged = true;
-        showSignalMarker('buy');
     }
     
-    // Crossunder проверка
-    if (close < sma_low && prevClose >= prevSmaLow) {
+    // Crossunder проверка (цена пересекла sma_low снизу)
+    if (close < sma_low && prevClose >= sma_low) {
         trend = false;
         signal_up = false;
         signal_down = true;
         indicator.stopLossHit = false;
-        indicator.trendChanged = true;
-        showSignalMarker('sell');
+    }
+    
+    // Если нет сигнала, сохраняем предыдущий тренд
+    if (!signal_up && !signal_down) {
+        trend = indicator.isBullish;
+    }
+    
+    // Рассчитываем цели только при смене тренда
+    if (signal_up || signal_down) {
+        const base = trend ? sma_low : sma_high;
+        const atr_multiplier = atr_value * (trend ? 1 : -1);
+        
+        // Обновляем цены для отображения
+        indicator.entryPrice = close;
+        indicator.stopLoss = base;
+        indicator.tp1 = close + atr_multiplier * (5 + target);
+        indicator.tp2 = close + atr_multiplier * (10 + target * 2);
+        indicator.tp3 = close + atr_multiplier * (15 + target * 4);
+        indicator.tp4 = close + atr_multiplier * (20 + target * 6);
     }
     
     // Проверка стоп лосса
-    if (!indicator.stopLossHit && indicator.targets.length > 0) {
-        const stopLossPrice = indicator.targets.find(t => t.type === 'stop')?.value;
-        if (stopLossPrice) {
-            if ((indicator.isBullish && close <= stopLossPrice) || 
-                (!indicator.isBullish && close >= stopLossPrice)) {
-                indicator.stopLossHit = true;
-                showStopLossAlert();
-            }
+    if (!indicator.stopLossHit && indicator.stopLoss !== 0) {
+        if ((trend && close <= indicator.stopLoss) || 
+            (!trend && close >= indicator.stopLoss)) {
+            indicator.stopLossHit = true;
         }
     }
     
-    // Calculate targets
-    const base = trend ? sma_low : sma_high;
-    const atr_multiplier = atr_value * (trend ? 1 : -1);
-    
-    const targets = [
-        { 
-            name: 'STOP LOSS', 
-            value: base, 
-            type: 'stop', 
-            color: indicator.stopLossHit ? '#ff4444' : '#ff4444'
-        },
-        { 
-            name: 'ENTRY', 
-            value: close, 
-            type: 'entry', 
-            color: indicator.stopLossHit ? '#ff4444' : '#0066cc'
-        },
-        { 
-            name: 'TP1', 
-            value: close + atr_multiplier * (5 + target), 
-            type: 'profit', 
-            color: indicator.stopLossHit ? '#ff4444' : '#00ffaa'
-        },
-        { 
-            name: 'TP2', 
-            value: close + atr_multiplier * (10 + target * 2), 
-            type: 'profit', 
-            color: indicator.stopLossHit ? '#ff4444' : '#00ffaa'
-        },
-        { 
-            name: 'TP3', 
-            value: close + atr_multiplier * (15 + target * 4), 
-            type: 'profit', 
-            color: indicator.stopLossHit ? '#ff4444' : '#00ffaa'
-        },
-        { 
-            name: 'TP4', 
-            value: close + atr_multiplier * (20 + target * 6), 
-            type: 'profit', 
-            color: indicator.stopLossHit ? '#ff4444' : '#00ffaa'
-        }
-    ];
+    // Форматируем числа до 5 знаков после запятой
+    const formatPrice = (price) => {
+        if (price >= 1000) return price.toFixed(2);
+        if (price >= 100) return price.toFixed(3);
+        if (price >= 10) return price.toFixed(4);
+        if (price >= 1) return price.toFixed(5);
+        if (price >= 0.1) return price.toFixed(6);
+        if (price >= 0.01) return price.toFixed(7);
+        if (price >= 0.001) return price.toFixed(8);
+        return price.toFixed(9);
+    };
     
     indicator = {
         ...indicator,
@@ -283,51 +332,42 @@ function calculatePineIndicator() {
         smaLow: sma_low,
         atr: atr_value,
         price: close,
-        targets,
         isBullish: trend,
         signal_up,
         signal_down,
         trendLength: length,
         targetMultiplier: target,
         atrPeriod,
-        lastUpdate: new Date()
+        // Форматированные значения для отображения
+        priceFormatted: formatPrice(close),
+        entryPriceFormatted: formatPrice(indicator.entryPrice),
+        stopLossFormatted: formatPrice(indicator.stopLoss),
+        tp1Formatted: formatPrice(indicator.tp1),
+        tp2Formatted: formatPrice(indicator.tp2),
+        tp3Formatted: formatPrice(indicator.tp3),
+        tp4Formatted: formatPrice(indicator.tp4)
     };
     
-    updateLastUpdateTime();
-    updatePriceAnimation(close);
-}
-
-function showSignalMarker(type) {
-    const chartContainer = document.querySelector('.chart-container');
-    const marker = document.createElement('div');
-    marker.className = `signal-marker ${type}`;
-    marker.style.left = '90%';
-    marker.style.top = '10%';
-    chartContainer.appendChild(marker);
-    
-    setTimeout(() => {
-        marker.remove();
-    }, 2000);
-}
-
-function showStopLossAlert() {
-    const trendElement = document.getElementById('trendValue');
-    trendElement.style.animation = 'none';
-    setTimeout(() => {
-        trendElement.style.animation = 'pulse 0.5s ease 3';
-    }, 10);
+    console.log('Pine Script Indicator:', {
+        trend: indicator.trend,
+        price: indicator.priceFormatted,
+        atr: indicator.atr,
+        stopLossHit: indicator.stopLossHit,
+        entry: indicator.entryPriceFormatted,
+        stop: indicator.stopLossFormatted
+    });
 }
 
 // ============================================
 // DATA LOADING WITH AUTO ZOOM
 // ============================================
 
-async function loadData(isInitial = false) {
+async function loadData() {
     if (isLoading) return;
     
     try {
         isLoading = true;
-        if (isInitial) showLoading();
+        showLoading();
         
         if (!chart) initChart();
         
@@ -341,21 +381,15 @@ async function loadData(isInitial = false) {
         }
         
         currentData = formatData(data);
-        updateChart(currentData);
+        updateChartData(currentData);
         calculatePineIndicator();
-        drawLines();
+        updatePriceLines();
         updateUI();
         
         // Автоматически подгоняем график в окно
-        if (isInitial) {
-            setTimeout(() => {
-                autoZoomToLatest();
-                hideLoading();
-                startLiveUpdates();
-            }, 500);
-        } else {
-            autoZoomToLatest();
-        }
+        autoZoomToLatest();
+        
+        hideLoading();
         
     } catch (error) {
         console.error('Error:', error);
@@ -379,21 +413,6 @@ async function getChartData(symbol, interval, limit = 100) {
     }
 }
 
-async function getLatestPrice(symbol) {
-    try {
-        const url = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`;
-        const response = await fetch(url);
-        
-        if (!response.ok) throw new Error(`API error: ${response.status}`);
-        const data = await response.json();
-        return parseFloat(data.price);
-        
-    } catch (error) {
-        console.warn('Error getting latest price:', error);
-        return null;
-    }
-}
-
 function formatData(rawData) {
     return rawData.map(item => ({
         time: item[0] / 1000,
@@ -409,8 +428,8 @@ function autoZoomToLatest() {
     if (!chart || currentData.length < 10) return;
     
     try {
-        // Показываем последние 50 свечей
-        const visibleBars = 50;
+        // Показываем последние 60 свечей
+        const visibleBars = 60;
         const lastBarIndex = currentData.length - 1;
         const firstVisibleIndex = Math.max(0, lastBarIndex - visibleBars);
         
@@ -432,245 +451,146 @@ function autoZoomToLatest() {
 }
 
 // ============================================
-// LIVE UPDATES (1 SECOND)
+// UPDATE CHART DATA
 // ============================================
 
-function startLiveUpdates() {
-    if (liveUpdateInterval) clearInterval(liveUpdateInterval);
-    
-    liveUpdateInterval = setInterval(async () => {
-        if (document.hidden || isLoading) return;
-        
-        try {
-            const symbol = document.getElementById('symbol').value;
-            const latestPrice = await getLatestPrice(symbol);
-            
-            if (latestPrice && currentData.length > 0) {
-                // Обновляем последнюю свечу
-                const lastCandle = currentData[currentData.length - 1];
-                const newTime = Math.floor(Date.now() / 1000);
-                
-                // Если время совпадает (та же свеча), обновляем цену
-                if (newTime - lastCandle.time < 60) {
-                    lastCandle.close = latestPrice;
-                    lastCandle.high = Math.max(lastCandle.high, latestPrice);
-                    lastCandle.low = Math.min(lastCandle.low, latestPrice);
-                } else {
-                    // Новая свеча
-                    currentData.push({
-                        time: newTime,
-                        open: lastCandle.close,
-                        high: latestPrice,
-                        low: latestPrice,
-                        close: latestPrice,
-                        volume: 0
-                    });
-                    
-                    // Удаляем старые данные если их слишком много
-                    if (currentData.length > 200) {
-                        currentData.shift();
-                    }
-                }
-                
-                // Плавно обновляем график
-                updateLiveChart();
-                
-                // Обновляем индикатор
-                calculatePineIndicator();
-                drawLines();
-                updateUI();
-                
-                // Плавно скроллим график вправо
-                const chart = window.chart;
-                if (chart) {
-                    const timeScale = chart.timeScale();
-                    const visibleRange = timeScale.getVisibleRange();
-                    if (visibleRange && visibleRange.to > lastCandle.time - 60) {
-                        timeScale.scrollToPosition(timeScale.scrollPosition() + 1, false);
-                    }
-                }
-            }
-        } catch (error) {
-            console.warn('Live update error:', error);
-        }
-    }, 1000); // Обновление каждую секунду
-}
-
-function updateLiveChart() {
+function updateChartData(data) {
     if (!candleSeries) return;
     
-    candleSeries.update(currentData[currentData.length - 1]);
+    candleSeries.setData(data);
+    
+    if (data.length > 0) {
+        const lastPrice = data[data.length - 1].close;
+        indicator.price = lastPrice;
+    }
 }
 
 // ============================================
-// DRAW LINES (WITH STOP LOSS LOGIC)
+// UPDATE PRICE LINES (ТОЛЬКО НУЖНЫЕ ЛИНИИ)
 // ============================================
 
-function drawLines() {
-    if (!chart || indicator.targets.length === 0) return;
+function updatePriceLines() {
+    if (!chart || currentData.length === 0) return;
     
-    // Remove old lines
-    [...lineSeries, ...trendLines].forEach(series => {
-        try {
-            chart.removeSeries(series);
-        } catch (e) {}
-    });
-    lineSeries = [];
-    trendLines = [];
+    const color = indicator.stopLossHit ? '#ff0000' : null;
     
-    // Draw target lines (все красные если стоп лосс сработал)
-    indicator.targets.forEach(target => {
-        const lineColor = indicator.stopLossHit ? '#ff4444' : target.color;
-        const lineWidth = target.type === 'entry' ? 3 : target.type === 'stop' ? 2 : 1;
-        const lineStyle = target.type === 'profit' ? 
-            LightweightCharts.LineStyle.Dashed : 
-            LightweightCharts.LineStyle.Solid;
-        
-        const series = chart.addLineSeries({
-            color: lineColor,
-            lineWidth: lineWidth,
-            lineStyle: lineStyle,
-            priceLineVisible: false,
-        });
-        
-        const lineData = currentData.map(d => ({
+    // Линия текущей цены (одна точка - текущее значение)
+    const currentPriceData = [{
+        time: currentData[currentData.length - 1].time,
+        value: indicator.price
+    }];
+    priceSeries.setData(currentPriceData);
+    
+    // Обновляем цвета линий если стоп лосс сработал
+    if (color) {
+        stopLossSeries.applyOptions({ color: color });
+        entrySeries.applyOptions({ color: color });
+        tp1Series.applyOptions({ color: color });
+        tp2Series.applyOptions({ color: color });
+        tp3Series.applyOptions({ color: color });
+        tp4Series.applyOptions({ color: color });
+    } else {
+        stopLossSeries.applyOptions({ color: '#ff0000' });
+        entrySeries.applyOptions({ color: '#0066cc' });
+        tp1Series.applyOptions({ color: '#00ff00' });
+        tp2Series.applyOptions({ color: '#00ff00' });
+        tp3Series.applyOptions({ color: '#00ff00' });
+        tp4Series.applyOptions({ color: '#00ff00' });
+    }
+    
+    // Создаем данные для линий (горизонтальные линии)
+    const createLineData = (value) => {
+        return currentData.map(d => ({
             time: d.time,
-            value: target.value
+            value: value
         }));
-        
-        series.setData(lineData);
-        lineSeries.push(series);
-    });
+    };
     
-    // Draw SMA lines
-    const smaHighSeries = chart.addLineSeries({
-        color: indicator.stopLossHit ? '#ff4444' : 'rgba(0, 255, 170, 0.7)',
-        lineWidth: 1,
-        lineStyle: LightweightCharts.LineStyle.Dashed,
-        priceLineVisible: false,
-    });
+    // Устанавливаем данные для всех линий
+    if (indicator.stopLoss !== 0) {
+        stopLossSeries.setData(createLineData(indicator.stopLoss));
+    }
     
-    const smaLowSeries = chart.addLineSeries({
-        color: indicator.stopLossHit ? '#ff4444' : 'rgba(255, 68, 68, 0.7)',
-        lineWidth: 1,
-        lineStyle: LightweightCharts.LineStyle.Dashed,
-        priceLineVisible: false,
-    });
+    if (indicator.entryPrice !== 0) {
+        entrySeries.setData(createLineData(indicator.entryPrice));
+    }
     
-    const smaHighData = currentData.map(d => ({
-        time: d.time,
-        value: indicator.smaHigh
-    }));
+    if (indicator.tp1 !== 0) {
+        tp1Series.setData(createLineData(indicator.tp1));
+    }
     
-    const smaLowData = currentData.map(d => ({
-        time: d.time,
-        value: indicator.smaLow
-    }));
+    if (indicator.tp2 !== 0) {
+        tp2Series.setData(createLineData(indicator.tp2));
+    }
     
-    smaHighSeries.setData(smaHighData);
-    smaLowSeries.setData(smaLowData);
+    if (indicator.tp3 !== 0) {
+        tp3Series.setData(createLineData(indicator.tp3));
+    }
     
-    trendLines.push(smaHighSeries, smaLowSeries);
+    if (indicator.tp4 !== 0) {
+        tp4Series.setData(createLineData(indicator.tp4));
+    }
 }
 
 // ============================================
-// UI UPDATES WITH ANIMATIONS
+// UI UPDATES
 // ============================================
 
 function updateUI() {
     // Update trend
     const trendElement = document.getElementById('trendValue');
-    const oldTrend = trendElement.textContent;
-    const newTrend = indicator.stopLossHit ? 'STOP HIT' : indicator.trend.toUpperCase();
-    
-    if (oldTrend !== newTrend) {
-        trendElement.style.animation = 'none';
-        setTimeout(() => {
-            trendElement.style.animation = 'fadeIn 0.3s ease';
-        }, 10);
-    }
-    
-    trendElement.textContent = newTrend;
-    trendElement.className = `status-value trend-${indicator.trend}`;
-    
     if (indicator.stopLossHit) {
-        trendElement.style.color = '#ff4444';
-        trendElement.style.textShadow = '0 0 10px rgba(255, 68, 68, 0.5)';
+        trendElement.textContent = 'STOP HIT';
+        trendElement.style.color = '#ff0000';
+    } else {
+        trendElement.textContent = indicator.trend.toUpperCase();
+        trendElement.style.color = indicator.trend === 'up' ? '#00ff00' : '#ff0000';
     }
     
-    // Update values
-    updatePriceWithAnimation();
-    document.getElementById('atrValue').textContent = indicator.atr.toFixed(4);
-    document.getElementById('smaHighValue').textContent = indicator.smaHigh.toFixed(2);
+    // Update values с точными ценами
+    document.getElementById('priceValue').textContent = indicator.priceFormatted || '0.00';
+    document.getElementById('atrValue').textContent = indicator.atr.toFixed(6);
+    document.getElementById('smaHighValue').textContent = indicator.smaHigh.toFixed(6);
     
     // Update targets
     const container = document.getElementById('targetsContainer');
     container.innerHTML = '';
     
-    indicator.targets.forEach(target => {
+    const targets = [
+        { name: 'STOP LOSS', value: indicator.stopLossFormatted || '0.00', type: 'stop' },
+        { name: 'ENTRY', value: indicator.entryPriceFormatted || '0.00', type: 'entry' },
+        { name: 'TP1', value: indicator.tp1Formatted || '0.00', type: 'profit' },
+        { name: 'TP2', value: indicator.tp2Formatted || '0.00', type: 'profit' },
+        { name: 'TP3', value: indicator.tp3Formatted || '0.00', type: 'profit' },
+        { name: 'TP4', value: indicator.tp4Formatted || '0.00', type: 'profit' }
+    ];
+    
+    targets.forEach(target => {
         const div = document.createElement('div');
         div.className = `target ${target.type}`;
         
         if (indicator.stopLossHit) {
-            div.style.borderLeftColor = '#ff4444';
+            div.style.borderLeftColor = '#ff0000';
+        }
+        
+        let textColor = '#ffffff';
+        if (!indicator.stopLossHit) {
+            if (target.type === 'stop') textColor = '#ff0000';
+            if (target.type === 'entry') textColor = '#0066cc';
+            if (target.type === 'profit') textColor = '#00ff00';
+        } else {
+            textColor = '#ff0000';
         }
         
         div.innerHTML = `
             <div class="target-name">${target.name}</div>
-            <div class="target-value value-${target.type}" 
-                 style="color: ${indicator.stopLossHit ? '#ff4444' : target.type === 'stop' ? '#ff4444' : target.type === 'entry' ? '#0066cc' : '#00ffaa'}">
-                ${target.value.toFixed(2)}
+            <div class="target-value" style="color: ${textColor}">
+                ${target.value}
             </div>
         `;
         
         container.appendChild(div);
     });
-}
-
-function updatePriceWithAnimation() {
-    const priceElement = document.getElementById('priceValue');
-    const currentPrice = parseFloat(priceElement.textContent) || 0;
-    const newPrice = indicator.price;
-    
-    priceElement.textContent = newPrice.toFixed(2);
-    
-    if (currentPrice !== 0) {
-        const changeElement = document.createElement('span');
-        changeElement.className = `price-change ${newPrice > currentPrice ? 'positive' : 'negative'}`;
-        changeElement.textContent = newPrice > currentPrice ? '▲' : '▼';
-        
-        priceElement.appendChild(changeElement);
-        
-        setTimeout(() => {
-            changeElement.remove();
-        }, 1000);
-    }
-}
-
-function updatePriceAnimation(newPrice) {
-    const priceElement = document.getElementById('priceValue');
-    const oldPrice = lastPrice;
-    
-    if (oldPrice !== 0 && newPrice !== oldPrice) {
-        priceElement.style.color = newPrice > oldPrice ? '#00ffaa' : '#ff4444';
-        setTimeout(() => {
-            priceElement.style.color = '#ffffff';
-        }, 500);
-    }
-    
-    lastPrice = newPrice;
-}
-
-function updateLastUpdateTime() {
-    const element = document.getElementById('lastUpdate');
-    const now = new Date();
-    const timeString = now.toLocaleTimeString('en-US', { 
-        hour12: false,
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
-    element.textContent = timeString;
 }
 
 // ============================================
@@ -684,16 +604,13 @@ function loadTestData() {
     const data = generateTestData(symbol);
     
     currentData = formatData(data);
-    updateChart(currentData);
+    updateChartData(currentData);
     calculatePineIndicator();
-    drawLines();
+    updatePriceLines();
     updateUI();
     
     autoZoomToLatest();
     hideLoading();
-    
-    // Запускаем тестовые обновления
-    startTestLiveUpdates();
 }
 
 function generateTestData(symbol) {
@@ -704,25 +621,23 @@ function generateTestData(symbol) {
     for (let i = 0; i < 100; i++) {
         const time = Date.now() - (99 - i) * 60000;
         
-        // Создаем трендовые движения
-        const trendStrength = trend ? 0.002 : -0.002;
-        const noise = (Math.random() - 0.5) * 0.001;
+        const trendStrength = trend ? 0.005 : -0.005;
+        const noise = (Math.random() - 0.5) * 0.01;
         
         const open = price;
         const change = trendStrength + noise;
         const close = open * (1 + change);
-        const high = Math.max(open, close) * (1.001 + Math.random() * 0.001);
-        const low = Math.min(open, close) * (0.999 - Math.random() * 0.001);
+        const high = Math.max(open, close) * (1.002 + Math.random() * 0.005);
+        const low = Math.min(open, close) * (0.998 - Math.random() * 0.005);
         
-        // Периодически меняем тренд
-        if (i % 30 === 0) trend = !trend;
+        if (i % 25 === 0) trend = !trend;
         
         data.push([
             time,
-            open.toFixed(6),
-            high.toFixed(6),
-            low.toFixed(6),
-            close.toFixed(6),
+            open.toFixed(8),
+            high.toFixed(8),
+            low.toFixed(8),
+            close.toFixed(8),
             (Math.random() * 1000).toFixed(2)
         ]);
         
@@ -732,35 +647,16 @@ function generateTestData(symbol) {
     return data;
 }
 
-function startTestLiveUpdates() {
-    if (liveUpdateInterval) clearInterval(liveUpdateInterval);
-    
-    liveUpdateInterval = setInterval(() => {
-        if (document.hidden) return;
-        
-        const lastCandle = currentData[currentData.length - 1];
-        const change = (Math.random() - 0.5) * 0.002;
-        const newPrice = lastCandle.close * (1 + change);
-        
-        lastCandle.close = newPrice;
-        lastCandle.high = Math.max(lastCandle.high, newPrice);
-        lastCandle.low = Math.min(lastCandle.low, newPrice);
-        
-        updateLiveChart();
-        calculatePineIndicator();
-        drawLines();
-        updateUI();
-        
-    }, 1000);
-}
-
 function getTestPrice(symbol) {
     const prices = {
         'BTCUSDT': 65000,
         'ETHUSDT': 3500,
         'BNBUSDT': 600,
         'SOLUSDT': 150,
-        'XRPUSDT': 0.6
+        'XRPUSDT': 0.6,
+        'ADAUSDT': 0.45,
+        'DOGEUSDT': 0.12,
+        'SHIBUSDT': 0.000025
     };
     return prices[symbol] || 100;
 }
@@ -768,19 +664,6 @@ function getTestPrice(symbol) {
 // ============================================
 // UTILITY FUNCTIONS
 // ============================================
-
-function updateChart(data) {
-    if (!candleSeries) return;
-    
-    candleSeries.setData(data);
-    
-    if (data.length > 0) {
-        const lastPrice = data[data.length - 1].close;
-        document.getElementById('priceValue').textContent = lastPrice.toFixed(2);
-        indicator.price = lastPrice;
-        updateLastUpdateTime();
-    }
-}
 
 function showLoading() {
     document.getElementById('loading').classList.remove('hidden');
@@ -798,6 +681,13 @@ function toggleFullscreen() {
     }
 }
 
+function resetStopLoss() {
+    indicator.stopLossHit = false;
+    calculatePineIndicator();
+    updatePriceLines();
+    updateUI();
+}
+
 function shareSignal() {
     const signal = `
 TREND_1H FUTURES SIGNAL
@@ -805,9 +695,13 @@ TREND_1H FUTURES SIGNAL
 Symbol: ${document.getElementById('symbol').value}
 Timeframe: ${document.getElementById('timeframe').value}
 Trend: ${indicator.trend.toUpperCase()} ${indicator.stopLossHit ? '(STOP HIT)' : ''}
-Price: ${indicator.price.toFixed(2)}
-ATR: ${indicator.atr.toFixed(4)}
-Stop Loss: ${indicator.targets.find(t => t.type === 'stop')?.value.toFixed(2) || '0.00'}
+Current Price: ${indicator.priceFormatted}
+Entry: ${indicator.entryPriceFormatted}
+Stop Loss: ${indicator.stopLossFormatted}
+TP1: ${indicator.tp1Formatted}
+TP2: ${indicator.tp2Formatted}
+TP3: ${indicator.tp3Formatted}
+TP4: ${indicator.tp4Formatted}
 ════════════════════════
 Time: ${new Date().toLocaleString()}
     `;
@@ -816,60 +710,28 @@ Time: ${new Date().toLocaleString()}
     tg.showAlert('Signal shared to Telegram!');
 }
 
-function resetStopLoss() {
-    indicator.stopLossHit = false;
-    indicator.trendChanged = false;
-    calculatePineIndicator();
-    drawLines();
-    updateUI();
-}
-
 // ============================================
 // EVENT HANDLERS
 // ============================================
 
 function setupEventListeners() {
-    document.getElementById('updateBtn').addEventListener('click', () => {
-        loadData(true);
-        // Анимация кнопки
-        const btn = document.getElementById('updateBtn');
-        btn.style.transform = 'scale(0.95)';
-        setTimeout(() => {
-            btn.style.transform = 'scale(1)';
-        }, 150);
-    });
-    
-    document.getElementById('symbol').addEventListener('change', () => {
-        loadData(true);
-    });
-    
-    document.getElementById('timeframe').addEventListener('change', () => {
-        loadData(true);
-    });
+    document.getElementById('updateBtn').addEventListener('click', loadData);
+    document.getElementById('symbol').addEventListener('change', loadData);
+    document.getElementById('timeframe').addEventListener('change', loadData);
     
     ['trendLength', 'targetMultiplier', 'atrPeriod'].forEach(id => {
         document.getElementById(id).addEventListener('change', () => {
             if (currentData.length > 20) {
                 calculatePineIndicator();
-                drawLines();
+                updatePriceLines();
                 updateUI();
             }
         });
     });
     
+    document.getElementById('resetBtn').addEventListener('click', resetStopLoss);
     document.getElementById('shareBtn').addEventListener('click', shareSignal);
     document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
-    document.getElementById('resetStopBtn').addEventListener('click', resetStopLoss);
-    
-    // Добавляем плавную прокрутку при клике
-    document.querySelectorAll('button, select, input').forEach(el => {
-        el.addEventListener('click', (e) => {
-            e.currentTarget.style.transform = 'scale(0.98)';
-            setTimeout(() => {
-                e.currentTarget.style.transform = 'scale(1)';
-            }, 100);
-        });
-    });
 }
 
 // ============================================
@@ -889,20 +751,22 @@ document.addEventListener('DOMContentLoaded', () => {
     initChart();
     
     // Загружаем данные
-    setTimeout(() => loadData(true), 300);
+    setTimeout(loadData, 500);
+    
+    // Автообновление
+    setInterval(() => {
+        if (!document.hidden) {
+            loadData();
+        }
+    }, 30000);
     
     // Обновление при возвращении на вкладку
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
             loadData();
-            startLiveUpdates();
-        } else {
-            if (liveUpdateInterval) {
-                clearInterval(liveUpdateInterval);
-                liveUpdateInterval = null;
-            }
         }
     });
     
     console.log('App started successfully');
 });
+
